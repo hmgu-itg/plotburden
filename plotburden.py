@@ -50,9 +50,9 @@ gc.end=end
 
 ## Getting variant consequences for all variants in the region
 info("Querying Ensembl for SNP consequences and phenotype associations.")
-#resp=get_rsid_in_region(gc)
+resp=get_rsid_in_region(gc)
 #resp.to_csv("snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
-resp=pd.read_table("~/snp.data", sep=",")
+#resp=pd.read_table("~/snp.data", sep=",")
 resp['pheno'].replace(to_replace=".*HGMD but.*", value="", inplace=True, regex=True)
 info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=""]), "have associated phenotypes.")
 
@@ -92,6 +92,8 @@ rawdat.dropna(subset=['chr'], inplace=True)
 info("Calculating LD...")
 task = subprocess.Popen(["/nfs/users/nfs_a/ag15/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 ld=pd.read_table(task.stdout, sep='\s+');
+os.remove("plink.log")
+os.remove("plink.nosex")
 
 
 
