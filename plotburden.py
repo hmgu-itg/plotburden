@@ -90,7 +90,8 @@ rawdat.dropna(subset=['chr'], inplace=True)
 
 ## Calculate LD
 info("Calculating LD...")
-task = subprocess.Popen(["/nfs/users/nfs_a/ag15/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
+info("getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
+task = subprocess.Popen([os.path.dirname(sys.argv[0])+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 ld=pd.read_table(task.stdout, sep='\s+');
 os.remove("plink.log")
 os.remove("plink.nosex")
@@ -122,12 +123,12 @@ info("Loading Bokeh...")
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import layout, widgetbox, row, column
 from bokeh.models.widgets import Button, RadioButtonGroup, Div
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet
+from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool
 output_file(output)
 p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
 
 ld_source=ColumnDataSource(data=dict(x1=ld.BP_A, x2=ld.BP_B, r2=ld.R2, dp=ld.DP))
-source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig))
+source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs_x, rs=rawdat.rs_y, maf=rawdat.maf, csq=rawdat.consequence))
 
 ## TODO
 ## this is the glyph for a third option in the "current signals"
@@ -175,7 +176,9 @@ p1.ray(x='ps', y='y', color="firebrick", length=0, angle=90, angle_units='deg', 
 traits=LabelSet(x='ps', y=p1.y_range.end, y_offset=-0.5, text='pheno', level='glyph', text_alpha='alpha', angle=90, angle_units='deg', text_font_size='10pt', text_align='right', text_font_style='italic', source=ray_source)
 p1.add_layout(traits)
 
-p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=None))
+p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=[("SNPid", "@snpid"), ("RSid", "@rs"), ("MAF", "@maf"), ("consequence", "@csq")]))
+taptool = p1.select(type=TapTool)
+taptool.callback = OpenURL(url="http://www.ensembl.org/Homo_sapiens/Variation/Explore?db=core;v=@rs;vdb=variation")
 p_rbg=Div(text="""<strong>Single-point :</strong>""", width=100)
 rbg = RadioButtonGroup(labels=["Hide non-burden", "Show all"], active=0, callback=showhide_sp, name="Hello")
 p_chcolor=Div(text="""<strong>Colouring :</strong>""", width=100)
