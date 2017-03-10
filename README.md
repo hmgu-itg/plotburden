@@ -11,7 +11,7 @@ This tool is aimed at helping researchers explore the results of their gene-base
 ## Example
 An image speaks better than a thousand words:
 ![Example image](example.png)
-The interactive version can be found [here](example.html).
+The interactive version can be found [here](http://rawgit.com/wtsi-team144/plotburden/master/example.html).
 
 ## Prerequisites
 In order to run this software you need to have working copies of the following tools installed:
