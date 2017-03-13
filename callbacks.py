@@ -404,7 +404,9 @@ displayhits_code="""
     }else if (cb_obj.active==1){
     //show signals
         for (k = 0, len = alpha.length; k < alpha.length; k++){
-        alpha[k]=1
+            if(d['pheno']!="none"){
+                alpha[k]=1
+            }
         }
     }
     d['alpha']=alpha

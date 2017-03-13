@@ -51,9 +51,13 @@ gc.end=end
 ## Getting variant consequences for all variants in the region
 info("Querying Ensembl for SNP consequences and phenotype associations.")
 resp=get_rsid_in_region(gc)
-#resp.to_csv("snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
-#resp=pd.read_table("~/snp.data", sep=",")
-resp['pheno'].replace(to_replace=".*HGMD but.*", value="", inplace=True, regex=True)
+resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
+#resp=pd.read_table("snp.data", sep=",")
+resp['pheno'].replace(to_replace="Annotated by HGMD but.*available", value="", inplace=True, regex=True)
+resp['pheno'].replace(to_replace="ClinVar.*not specified", value="", inplace=True, regex=True)
+resp.loc[isnull(resp.pheno), 'pheno']="none"
+resp.pheno=resp.pheno.str.strip()
+resp.loc[resp.pheno=="", 'pheno']="none"
 info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=""]), "have associated phenotypes.")
 
 
@@ -66,7 +70,8 @@ sp=pd.merge(sp, resp, on='ps', how='outer')
 #rs_y is the ensembl rsid
 sp.loc[isnull(sp.rs_y), 'rs_y']="novel"
 sp.loc[isnull(sp.consequence), 'consequence']="novel"
-sp.loc[isnull(sp.pheno), 'pheno']="none"
+
+
 sp=sp[notnull(sp.chr)]
 
 
@@ -100,8 +105,8 @@ os.remove("plink.nosex")
 
 ## Defining plot-specific data
 info("Defining plot-specific data...")
-rawdat['radii']=150
-rawdat.loc[rawdat.weight.notnull(), 'radii']=150+1000*rawdat.weight[rawdat.weight.notnull()]/max(rawdat.weight[rawdat.weight.notnull()])
+rawdat['radii']=3
+rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/max(rawdat.weight[rawdat.weight.notnull()])
 rawdat['alpha']=0
 rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 rawdat['alpha_prevsig']=0
@@ -137,7 +142,7 @@ source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), 
 ## the callbacks also need to be written to update alpha_prevsig in rawdat.
 #p1.asterisk(x='ps', y='logsp', size=20, alpha='alpha_prevsig', color="#F0027F", line_width=2, source=source)
 
-p1.circle(x='ps', y='logsp', radius='radii', fill_alpha='alpha', fill_color='color', line_color='outcol', line_alpha='outalpha', line_width=6, source=source)
+p1.circle(x='ps', y='logsp', radius='radii', fill_alpha='alpha', fill_color='color', line_color='outcol', line_alpha='outalpha', line_width=6, radius_units='screen', source=source)
 p1.xaxis.visible = False
 segsource=ColumnDataSource(data=dict(y0=[logburdenp], y1=[logburdenp], x0=[min(rawdat.loc[rawdat.weight.notnull(), 'ps'])], x1=[max(rawdat.loc[rawdat.weight.notnull(), 'ps'])], alpha=[1], color=["firebrick"]))
 p1.segment(y0='y0', y1='y1' , x0='x0', x1='x1', color='color', alpha='alpha', source=segsource, line_width=3)
@@ -165,6 +170,7 @@ ldbz_hover = CustomJS(args=dict(lds=ld_source, rawdat=source, bezier=bzier, sign
 changehover = CustomJS(args=dict(signalling=signalling, rawdat=source, bezier=bzier), code=changehover_code)
 
 resp=resp[notnull(resp.pheno)]
+resp=resp[resp.pheno!="none"]
 resp['alpha']=0
 resp['y']=None
 ray_source=ColumnDataSource(data=dict(ps=resp.ps, alpha=resp.alpha, y=resp.y, pheno=resp.pheno))
