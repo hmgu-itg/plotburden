@@ -63,6 +63,7 @@ info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=
 
 
 
+
 ## Get the single point results
 sp = fetch_single_point(gc, sp_results)
 info("Read", len(sp), "lines from single-point analysis.");
@@ -128,7 +129,7 @@ info("Loading Bokeh...")
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import layout, widgetbox, row, column
 from bokeh.models.widgets import Button, RadioButtonGroup, Div
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool
+from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis
 output_file(output)
 p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
 
@@ -199,6 +200,8 @@ control_signals = RadioButtonGroup(labels=["No", "Rays"], active=0, callback=dis
 gc.extend(-int(window))
 p2=draw_genes(gc, window, width=1500)
 p2.x_range=p1.x_range
+#xaxis = p2.select(dict(type=Axis, layout="bottom"))[0]
+p2.xaxis[0].formatter.use_scientific = False
 
 bbox=column(row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]))
 l=layout([[p1, bbox], [p2]])

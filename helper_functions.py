@@ -3,6 +3,8 @@ import urllib.request
 import urllib.parse
 import pandas as pd
 import numpy as np
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
 
 # number by which to multiply the normal number of requests to Ensembl
 # Increase if lots of 504 Timeout errors
@@ -64,6 +66,36 @@ def get_rsid_in_region(gc):
 	start=gc.start
 	end=gc.end
 	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;';
+	info("\t\t\t🌐   Querying Ensembl with region "+url)
+	response = urllib.request.urlopen(url).read().decode('utf-8')
+	jData = json.loads(response)
+	snps=pd.DataFrame(jData)
+	snps['location']=snps.seq_region_name.map(str)+":"+snps.start.map(str)+"-"+snps.end.map(str)
+
+	url = server+'/phenotype/region/homo_sapiens/'+str(c)+":"+str(start)+"-"+str(end)+'?feature_type=Variation;content-type=application/json;';
+	info("\t\t\t🌐   Querying Ensembl with region "+url)
+	response = urllib.request.urlopen(url).read().decode('utf-8')
+	jData = json.loads(response)
+	pheno=pd.DataFrame(jData)
+	#print(pheno['phenotype_associations'])
+	pheno['pheno']=""
+	pheno['location']=""
+	for index, variant in pheno.iterrows():
+		for assoc in variant.phenotype_associations:
+			if assoc['source'] != 'COSMIC':
+				variant.pheno=assoc['description'] if (variant.pheno=="") else variant.pheno+";"+assoc['description'];
+				variant.location=assoc['location']
+	resp=pd.merge(snps, pheno, on='location', how='outer')
+	resp.drop(["alleles", "assembly_name", "clinical_significance", "feature_type", "end", "seq_region_name", "phenotype_associations", "strand", "source", "id_y", "location"], axis=1, inplace=True)
+	resp.dropna(inplace=True, subset=["id_x"])
+	resp.rename(columns = {'start':'ps', 'id_x':'rs', 'consequence_type':'consequence'}, inplace = True)
+	return(resp)
+
+def get_rsid_in_region_old(gc):
+	c=gc.chrom
+	start=gc.start
+	end=gc.end
+	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;';
 	info("Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
@@ -116,6 +148,11 @@ def read_variants_from_gene_set(gc, input_monster):
 	variants=variants.transpose()
 	variants['ps']=variants.index
 	variants.index=range(variants.count()[0])
-	variants.columns=["weight", "ps"]
+	if (len(variants.columns)==2):
+		variants.columns=["weight", "ps"]
+	else:
+		#Sometimes runs have no weights
+		variants.columns=["ps"]
+		variants['weight']=1
 	variants.ps=pd.to_numeric(variants.ps, errors='coerce')
 	return(variants)
