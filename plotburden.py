@@ -129,9 +129,9 @@ info("Loading Bokeh...")
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import layout, widgetbox, row, column
 from bokeh.models.widgets import Button, RadioButtonGroup, Div
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis
+from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis, SaveTool
 output_file(output)
-p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
+p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset,save", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
 
 ld_source=ColumnDataSource(data=dict(x1=ld.BP_A, x2=ld.BP_B, r2=ld.R2, dp=ld.DP))
 source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs_x, rs=rawdat.rs_y, maf=rawdat.maf, csq=rawdat.consequence))

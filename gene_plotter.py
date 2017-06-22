@@ -7,6 +7,7 @@ from helper_functions import *
 from bokeh.plotting import *
 from bokeh.models import *
 
+
 def draw_genes(gc, window, width=900, height=400):
     '''
     Based on the gene name this function draws selected and overlapping genomic features on 
@@ -51,7 +52,7 @@ def draw_genes(gc, window, width=900, height=400):
     #tools = [WheelZoomTool(), PanTool(), ResetTool()] 
     p = figure(width=width, height=height, 
                y_range = (overlapping_df["y_position"].min()-0.5,11),
-               x_range = (start_region, end_region), tools = "xwheel_zoom,xpan,reset")
+               x_range = (start_region, end_region), tools = "xwheel_zoom,xpan,reset,save")
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     p.yaxis.visible = False
