@@ -219,7 +219,7 @@ def get_genomic_features(gc):
 
     # Open and read files:
     bedlines = {"GENCODE" : [], "regulatory" : []}
-    for line in intersectfeature[(intersectfeature.start2 == start) & (intersectfeature.end2 == end)]["annot"]:
+    for line in intersectfeature[intersectfeature.geneID == gc.gene_id]["annot"]:
         content = line.strip()
 
         # Extract json string and load data:
