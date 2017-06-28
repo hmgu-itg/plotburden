@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import sys
 import subprocess
 import pandas as pd
@@ -51,13 +52,15 @@ gc.end=end
 ## Getting variant consequences for all variants in the region
 info("Querying Ensembl for SNP consequences and phenotype associations.")
 resp=get_rsid_in_region(gc)
-resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
+#resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
 #resp=pd.read_table("snp.data", sep=",")
 resp['pheno'].replace(to_replace="Annotated by HGMD but.*available", value="", inplace=True, regex=True)
 resp['pheno'].replace(to_replace="ClinVar.*not specified", value="", inplace=True, regex=True)
 resp.loc[isnull(resp.pheno), 'pheno']="none"
 resp.pheno=resp.pheno.str.strip()
 resp.loc[resp.pheno=="", 'pheno']="none"
+resp['ensembl_rs']=resp['rs']
+resp.drop('rs', axis=1, inplace=True)
 info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=""]), "have associated phenotypes.")
 
 
@@ -69,13 +72,12 @@ sp = fetch_single_point(gc, sp_results)
 info("Read", len(sp), "lines from single-point analysis.");
 sp=pd.merge(sp, resp, on='ps', how='outer')
 #rs_y is the ensembl rsid
-sp.loc[isnull(sp.rs_y), 'rs_y']="novel"
+sp.loc[isnull(sp.ensembl_rs), 'ensembl_rs']="novel"
 sp.loc[isnull(sp.consequence), 'consequence']="novel"
-
-
 sp=sp[notnull(sp.chr)]
-
-
+sp['ensembl_consequence']=sp['consequence']
+sp['chr']=sp['chr'].astype(int)
+sp=get_csq_novel_variants(sp, 'chr', 'ps', 'allele0', 'allele1')
 ## Get the burden p from MONSTER output
 results=pd.read_table(output_monster);
 burdenp=results.p_MONSTER[0];
@@ -88,10 +90,11 @@ info("Burden p-value is", burdenp, "(", logburdenp, ").");
 variants=read_variants_from_gene_set(gc, input_monster)
 info("Read ", variants.count()[0], "variants in burden")
 rawdat=pd.merge(sp, variants, on='ps', how='outer')
+
 if rawdat[rawdat.chr.isnull()].ps.size > 0 :
 	warn(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants were not found in the single point. They will be removed, but this is not a normal thing, please check your results.")
 rawdat.dropna(subset=['chr'], inplace=True)
-
+print(rawdat.head())
 
 
 ## Calculate LD
@@ -134,7 +137,7 @@ output_file(output)
 p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset,save", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
 
 ld_source=ColumnDataSource(data=dict(x1=ld.BP_A, x2=ld.BP_B, r2=ld.R2, dp=ld.DP))
-source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs_x, rs=rawdat.rs_y, maf=rawdat.maf, csq=rawdat.consequence))
+source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs, rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence))
 
 ## TODO
 ## this is the glyph for a third option in the "current signals"
@@ -206,3 +209,4 @@ p2.xaxis[0].formatter.use_scientific = False
 bbox=column(row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]))
 l=layout([[p1, bbox], [p2]])
 save(l)
+rawdat.to_csv(output+".csv", index=False)

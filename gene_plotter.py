@@ -16,10 +16,11 @@ def draw_genes(gc, window, width=900, height=400):
     
     # Based on the gene name get all selected exons and regulatory features that are associated with this gene:
     df = get_genomic_features(gc)
+    print(df)
     info('Selected genomic features extracted.')
-
     # Get the boundaries of the used features:
     start_region = df.start.min() - int(window)
+    start_region = 0 if start_region < 0 else start_region
     end_region = df.end.max() + int(window)
     chromosome = df.chrom.tolist()[1].replace("chr", "")
 
@@ -276,7 +277,6 @@ def get_genomic_features(gc):
             full_df = full_df.append(regulatory_df)
         except:
             full_df = regulatory_df
-
     return(full_df)
 
 def get_biotype_color(biotype):
