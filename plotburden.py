@@ -61,7 +61,7 @@ resp.pheno=resp.pheno.str.strip()
 resp.loc[resp.pheno=="", 'pheno']="none"
 resp['ensembl_rs']=resp['rs']
 resp.drop('rs', axis=1, inplace=True)
-info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=""]), "have associated phenotypes.")
+info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!="none"]), "have associated phenotypes.")
 
 
 

@@ -50,7 +50,7 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
 	if novelsnps.empty:
 		return e
 	pd.options.mode.chained_assignment = None
-	novelsnps['query']=novelsnps[chrcol].astype(str)+" "+novelsnps[pscol].astype(str)+" . "+novelsnps[a1col].astype(str)+" "+novelsnps[a2col].astype(str)+" . . ."
+	novelsnps['query']=novelsnps[chrcol].astype(str)+" "+novelsnps[pscol].astype(int).astype(str)+" . "+novelsnps[a1col].astype(str)+" "+novelsnps[a2col].astype(str)+" . . ."
 	n=200
 	for i in range(0, len(novelsnps['query']), n):
 		request='{ "variants" : ["'+'", "'.join(novelsnps['query'][i:i+n])+'" ] }'
@@ -200,3 +200,4 @@ def read_variants_from_gene_set(gc, input_monster):
 		variants['weight']=1
 	variants.ps=pd.to_numeric(variants.ps, errors='coerce')
 	return(variants)
+
