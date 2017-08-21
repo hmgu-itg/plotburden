@@ -22,7 +22,7 @@ def draw_genes(gc, window, width=900, height=400):
     start_region = df.start.min() - int(window)
     start_region = 0 if start_region < 0 else start_region
     end_region = df.end.max() + int(window)
-    chromosome = df.chrom.tolist()[1].replace("chr", "")
+    chromosome = df.chrom.tolist()[0].replace("chr", "")
 
     # Return overlapping genomic features:
     overlapping_df = get_overlapping_features(chromosome, start_region, end_region)
