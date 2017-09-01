@@ -110,7 +110,12 @@ os.remove("plink.nosex")
 ## Defining plot-specific data
 info("Defining plot-specific data...")
 rawdat['radii']=3
-rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/max(rawdat.weight[rawdat.weight.notnull()])
+denom=rawdat.weight[rawdat.weight.notnull()]
+if len(denom):
+	denom=max(denom)
+else:
+	denom=1
+rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/denom
 rawdat['alpha']=0
 rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 rawdat['alpha_prevsig']=0
@@ -189,6 +194,7 @@ p1.add_layout(traits)
 p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=[("SNPid", "@snpid"), ("RSid", "@rs"), ("MAF", "@maf"), ("consequence", "@csq")]))
 taptool = p1.select(type=TapTool)
 taptool.callback = OpenURL(url="http://www.ensembl.org/Homo_sapiens/Variation/Explore?db=core;v=@rs;vdb=variation")
+
 p_rbg=Div(text="""<strong>Single-point :</strong>""", width=100)
 rbg = RadioButtonGroup(labels=["Hide non-burden", "Show all"], active=0, callback=showhide_sp, name="Hello")
 p_chcolor=Div(text="""<strong>Colouring :</strong>""", width=100)

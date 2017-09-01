@@ -186,8 +186,8 @@ def fetch_single_point(gc, sp_results):
 def read_variants_from_gene_set(gc, input_monster):
 	c=gc.chrom
 	variants=pd.read_table(input_monster)
-	variants.columns=[w.replace('chr'+str(c)+"_", '') for w in variants.columns]
-	variants.columns=[re.sub("_.*", '', w) for w in variants.columns]
+	variants.columns=[w.replace('chr'+str(c), '') for w in variants.columns]
+	variants.columns=[re.sub("[A-Z]*", '', w) for w in variants.columns]
 	variants.drop(variants.columns[[0,1]], axis=1, inplace=True)
 	variants=variants.transpose()
 	variants['ps']=variants.index
