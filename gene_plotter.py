@@ -206,10 +206,11 @@ def get_genomic_features(gc):
     featureFile = BedTool(featureFile)
 
     # Extract all lines overlapping with this gene:
-    (chromosome, start, end, gene_ID, name) = (gc.chrom, gc.start, gc.end, gc.gene_id, gc.name)
+    (chromosome, start, end, gene_ID, name) = (gc.chrom, gc.gstart, gc.gend, gc.gene_id, gc.name)
     info('Coordinates of the queried gene retrieved.')
 
     # Creating bed formatted text from the submitted genomic coordinates:
+    print(str(chromosome), start, end, name)
     geneBed = BedTool([("chr"+str(chromosome), start, end, name)])
     
     # Overlapping genomic features are selected:

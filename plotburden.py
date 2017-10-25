@@ -27,27 +27,25 @@ vcf=sys.argv[5]
 window=sys.argv[6]
 output=sys.argv[7]
 
-
-
-
 # global variables
 server = "https://rest.ensembl.org";
 helper_functions.server=server;
 
-
-
-# Getting Gene coordinates
+# Getting Gene coordinates and extend the coordinates with the specified window:
 info("Querying Ensembl for gene coordinates...")
 gc=get_coordinates(gene);
-c=gc.chrom
-start=gc.start
-end=gc.end
-info("\t\t⇰ Ensembl provided the coordinates "+str(c)+":"+str(start)+"-"+str(end)+" for gene "+gene)
-start-=int(window)
-end+=int(window)
-gc.start=start
-gc.end=end
+gc.extend(int(window))
 
+# Extract coordinates:
+c=gc.chrom
+start = gc.start
+end = gc.end
+gene_start=gc.gstart
+gene_end=gc.gend
+
+# Report coordinates:
+info("\t\t⇰ Ensembl provided the coordinates "+str(c)+":"+str(gene_start)+"-"+str(gene_end)+" for gene "+gene)
+info("\t\t⇰ Plot boundaries: "+ str(c)+":"+str(start)+"-"+str(end))
 
 ## Getting variant consequences for all variants in the region
 info("Querying Ensembl for SNP consequences and phenotype associations.")
@@ -206,7 +204,8 @@ control_ld = RadioButtonGroup(labels=["Highlight", "Fountain"], active=0, callba
 p_signals=Div(text="""<strong>Show Existing associations :</strong>""", width=100)
 control_signals = RadioButtonGroup(labels=["No", "Rays"], active=0, callback=displayhits)
 
-gc.extend(-int(window))
+#gc.extend(-int(window)) # <- Not needed anymore. gc object contains the gene start and gene end position: gc.gstart and gc.gend
+
 p2=draw_genes(gc, window, width=1500)
 p2.x_range=p1.x_range
 #xaxis = p2.select(dict(type=Axis, layout="bottom"))[0]
