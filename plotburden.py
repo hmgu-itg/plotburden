@@ -205,14 +205,15 @@ p_ld=Div(text="""<strong>LD behaviour :</strong>""", width=100)
 control_ld = RadioButtonGroup(labels=["Highlight", "Fountain"], active=0, callback=changehover)
 p_signals=Div(text="""<strong>Show Existing associations :</strong>""", width=100)
 control_signals = RadioButtonGroup(labels=["No", "Rays"], active=0, callback=displayhits)
-
+p1.yaxis[0].major_label_text_font_size = "14pt"
 gc.extend(-int(window))
 p2=draw_genes(gc, window, width=1500)
 p2.x_range=p1.x_range
 #xaxis = p2.select(dict(type=Axis, layout="bottom"))[0]
 p2.xaxis[0].formatter.use_scientific = False
-
+p2.xaxis[0].major_label_text_font_size = "14pt"
 bbox=column(row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]))
 l=layout([[p1, bbox], [p2]])
 save(l)
 rawdat.to_csv(output+".csv", index=False)
+ld.to_csv(output+".ld.csv",index=False)
