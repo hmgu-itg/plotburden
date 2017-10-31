@@ -92,7 +92,7 @@ rawdat=pd.merge(sp, variants, on='ps', how='outer')
 if rawdat[rawdat.chr.isnull()].ps.size > 0 :
 	warn(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants were not found in the single point. They will be removed, but this is not a normal thing, please check your results.")
 rawdat.dropna(subset=['chr'], inplace=True)
-print(rawdat.head())
+
 
 
 ## Calculate LD
@@ -136,6 +136,7 @@ from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import layout, widgetbox, row, column
 from bokeh.models.widgets import Button, RadioButtonGroup, Div
 from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis, SaveTool
+
 output_file(output)
 p1=figure(width=1500, x_range=[start, end], tools="box_zoom,tap,xwheel_zoom,reset,save", y_range=[-0.5, max(append(-log10(rawdat.p_score), logburdenp))+0.5])
 
@@ -185,7 +186,7 @@ displayhits = CustomJS(args=dict(source=ray_source), code=displayhits_code)
 
 
 
-p1.ray(x='ps', y='y', color="firebrick", length=0, angle=90, angle_units='deg', alpha='alpha', source=ray_source)
+p1.segment(x0='ps', x1='ps', y0=p1.y_range.start, color="firebrick", y1=p1.y_range.end, alpha='alpha', source=ray_source)
 traits=LabelSet(x='ps', y=p1.y_range.end, y_offset=-0.5, text='pheno', level='glyph', text_alpha='alpha', angle=90, angle_units='deg', text_font_size='10pt', text_align='right', text_font_style='italic', source=ray_source)
 p1.add_layout(traits)
 
@@ -203,7 +204,9 @@ p_ld=Div(text="""<strong>LD behaviour :</strong>""", width=100)
 control_ld = RadioButtonGroup(labels=["Highlight", "Fountain"], active=0, callback=changehover)
 p_signals=Div(text="""<strong>Show Existing associations :</strong>""", width=100)
 control_signals = RadioButtonGroup(labels=["No", "Rays"], active=0, callback=displayhits)
-p1.yaxis[0].major_label_text_font_size = "14pt"
+p1.yaxis[0].major_label_text_font_size = "13pt"
+p1.yaxis.axis_label = '-log₁₀(p)'
+p1.yaxis.axis_label_text_font_size = "15pt"
 
 #gc.extend(-int(window)) # <- Not needed anymore. gc object contains the gene start and gene end position: gc.gstart and gc.gend
 
@@ -211,10 +214,14 @@ p2=draw_genes(gc, window, width=1500)
 p2.x_range=p1.x_range
 #xaxis = p2.select(dict(type=Axis, layout="bottom"))[0]
 p2.xaxis[0].formatter.use_scientific = False
-p2.xaxis[0].major_label_text_font_size = "14pt"
+p2.xaxis[0].major_label_text_font_size = "13pt"
+p2.xaxis.axis_label = 'position on chromosome '+str(rawdat.chr[1].astype(np.int64))
+p2.xaxis.axis_label_text_font_size = "15pt"
 
 bbox=column(row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]))
 l=layout([[p1, bbox], [p2]])
+p1.output_backend = "svg" #NOT FUNCTIONAL
+p2.output_backend = "svg"
 save(l)
 rawdat.to_csv(output+".csv", index=False)
 ld.to_csv(output+".ld.csv",index=False)

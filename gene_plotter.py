@@ -16,7 +16,6 @@ def draw_genes(gc, window, width=900, height=400):
     
     # Based on the gene name get all selected exons and regulatory features that are associated with this gene:
     df = get_genomic_features(gc)
-    print(df)
     info('Selected genomic features extracted.')
     # Get the boundaries of the used features:
     start_region = df.start.min() - int(window)
@@ -80,8 +79,8 @@ def draw_genes(gc, window, width=900, height=400):
     p.add_tools(hover)
 
     # Adding text to the plot:
-    selected_text = Label(x=40, y=10.5, x_units='screen', y_units='data',text='Selected genomic features')
-    overlapping_text = Label(x=40, y=8, x_units='screen', y_units='data',text='Overlapping genomic features')
+    selected_text = Label(x=65, y=10.5, x_units='screen', y_units='data',text='Selected genomic features')
+    overlapping_text = Label(x=65, y=8, x_units='screen', y_units='data',text='Overlapping genomic features')
 
     p.add_layout(selected_text)
     p.add_layout(overlapping_text)
@@ -210,7 +209,7 @@ def get_genomic_features(gc):
     info('Coordinates of the queried gene retrieved.')
 
     # Creating bed formatted text from the submitted genomic coordinates:
-    print(str(chromosome), start, end, name)
+    #print(str(chromosome), start, end, name)
     geneBed = BedTool([("chr"+str(chromosome), start, end, name)])
     
     # Overlapping genomic features are selected:

@@ -67,7 +67,7 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
             sys.exit() 
         jData = json.loads(r.text)
         csq=csq.append(pd.DataFrame(jData))
-    print(csq.head())
+
     # request='{ "variants" : ["'+'", "'.join(novelsnps['query'])+'" ] }'
     # ext = "/vep/homo_sapiens/region"
     # headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
