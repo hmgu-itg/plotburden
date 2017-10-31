@@ -80,8 +80,8 @@ def draw_genes(gc, window, width=900, height=400):
     p.add_tools(hover)
 
     # Adding text to the plot:
-    selected_text = Label(x=25, y=10.5, x_units='screen', y_units='data',text='Selected genomic features')
-    overlapping_text = Label(x=25, y=8, x_units='screen', y_units='data',text='Overlapping genomic features')
+    selected_text = Label(x=30, y=10.5, x_units='screen', y_units='data',text='Selected genomic features')
+    overlapping_text = Label(x=30, y=8, x_units='screen', y_units='data',text='Overlapping genomic features')
 
     p.add_layout(selected_text)
     p.add_layout(overlapping_text)
