@@ -26,6 +26,7 @@ sp_results=sys.argv[4]
 vcf=sys.argv[5]
 window=sys.argv[6]
 output=sys.argv[7]
+chop=sys.argv[8]
 
 # global variables
 server = "https://rest.ensembl.org";
@@ -210,7 +211,7 @@ p1.yaxis.axis_label_text_font_size = "15pt"
 
 #gc.extend(-int(window)) # <- Not needed anymore. gc object contains the gene start and gene end position: gc.gstart and gc.gend
 
-p2=draw_genes(gc, window, width=1500)
+p2=draw_genes(gc, window, width=1500, chop=chop)
 p2.x_range=p1.x_range
 #xaxis = p2.select(dict(type=Axis, layout="bottom"))[0]
 p2.xaxis[0].formatter.use_scientific = False
