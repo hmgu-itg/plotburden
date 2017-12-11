@@ -8,15 +8,14 @@ suffix=$4
 sp=/lustre/scratch115/projects/t144_helic_15x/analysis/HA/single_point/output/missing_chunks
 vcf=/lustre/scratch115/projects/t144_helic_15x/analysis/HA/release
 
-mkdir $ph.$gene.$suffix
+mkdir -p $ph.$gene.$suffix
 cd $ph.$gene.$suffix
-
-folder=../$folder
 
 # Extract chunk number:
 chunk=$(grep -lw $gene $folder/Pheno.$ph/MONSTER.*.out | sed 's/.out//;s/.*\.//')
 if [ -z "$chunk" ]; then
-    continue
+    echo "[Error] Chunk was not found for $gene. Exiting." >&2
+    exit;    
 fi
 echo Found gene $gene in chunk $chunk.
 
@@ -31,8 +30,6 @@ fgrep -w $gene $ph.$gene/snpfile.mod.nomono.txt > $ph.$gene.snpfile
 rm -r $ph.$gene
 
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-echo $SRCDIR/plotburden.py $gene $ph.$gene.snpfile $ph.$gene.MONSTER.out $sp/$ph/MANOLIS.$ph.assoc.missingfilled.txt.bgz $vcf/chr$(wget --no-check-certificate -q -O - "https://rest.ensembl.org/lookup/symbol/homo_sapiens/${gene}?content-type=application/json;expand=0" | sed 's/.*region_name...//;s/\".*//').vcf.gz 100000 ${ph}-${gene}$suffix.html
-
 $SRCDIR/plotburden.py $gene $ph.$gene.snpfile $ph.$gene.MONSTER.out $sp/$ph/MANOLIS.$ph.assoc.missingfilled.txt.bgz $vcf/chr$(wget --no-check-certificate -q -O - "https://rest.ensembl.org/lookup/symbol/homo_sapiens/${gene}?content-type=application/json;expand=0" | sed 's/.*region_name...//;s/\".*//').vcf.gz 100000 ${ph}-${gene}$suffix.html $chop
 mv * ..
 cd ..
