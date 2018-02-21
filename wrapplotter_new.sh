@@ -8,6 +8,7 @@ suffix=$4
 sp=/lustre/scratch115/projects/t144_helic_15x/analysis/HA/single_point/release
 vcf=/lustre/scratch115/projects/t144_helic_15x/analysis/HA/release
 
+
 mkdir -p $ph.$gene.$suffix
 cd $ph.$gene.$suffix
 
@@ -31,6 +32,7 @@ rm -r $ph.$gene
 
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $SRCDIR/plotburden.py $gene $ph.$gene.snpfile $ph.$gene.MONSTER.out $sp/$ph/MANOLIS.$ph.assoc.txt.bgz $vcf/chr$(wget --no-check-certificate -q -O - "https://rest.ensembl.org/lookup/symbol/homo_sapiens/${gene}?content-type=application/json;expand=0" | sed 's/.*region_name...//;s/\".*//').vcf.gz 100000 ${ph}-${gene}$suffix.html $chop
+
 mv * ..
 cd ..
 rm -rf $ph.$gene.$suffix
