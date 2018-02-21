@@ -39,6 +39,7 @@ helper_functions.server=server;
 # Getting Gene coordinates
 info("Querying Ensembl for gene coordinates...")
 gc=get_coordinates(gene);
+
 c=gc.chrom
 start=gc.start
 end=gc.end
@@ -153,7 +154,16 @@ source = ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), 
 
 p1.circle(x='ps', y='logsp', radius='radii', fill_alpha='alpha', fill_color='color', line_color='outcol', line_alpha='outalpha', line_width=6, radius_units='screen', source=source)
 p1.xaxis.visible = False
-segsource=ColumnDataSource(data=dict(y0=[logburdenp], y1=[logburdenp], x0=[min(rawdat.loc[rawdat.weight.notnull(), 'ps'])], x1=[max(rawdat.loc[rawdat.weight.notnull(), 'ps'])], alpha=[1], color=["firebrick"]))
+gc2=get_coordinates(gene);
+
+if (max(rawdat.loc[rawdat.weight.notnull(), 'ps'])-min(rawdat.loc[rawdat.weight.notnull(), 'ps']) < 500):
+	eseg=gc2.end
+	sseg=gc2.start
+else:
+	eseg=max(rawdat.loc[rawdat.weight.notnull(), 'ps'])
+	sseg=min(rawdat.loc[rawdat.weight.notnull(), 'ps'])
+
+segsource=ColumnDataSource(data=dict(y0=[logburdenp], y1=[logburdenp], x0=[sseg], x1=[eseg], alpha=[1], color=["firebrick"]))
 p1.segment(y0='y0', y1='y1' , x0='x0', x1='x1', color='color', alpha='alpha', source=segsource, line_width=3)
 x0=rawdat.ps[100]
 y0=-log10(rawdat.p_score[100])
@@ -214,6 +224,8 @@ p2.xaxis[0].formatter.use_scientific = False
 p2.xaxis[0].major_label_text_font_size = "14pt"
 bbox=column(row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]))
 l=layout([[p1, bbox], [p2]])
+p1.output_backend = "svg" #NOT FUNCTIONAL
+p2.output_backend = "svg"
 save(l)
 rawdat.to_csv(output+".csv", index=False)
 ld.to_csv(output+".ld.csv",index=False)
