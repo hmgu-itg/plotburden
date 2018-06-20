@@ -143,7 +143,8 @@ def get_overlapping_features(chromosome, start, end):
         # Extract eature types and transcript and gene IDs:
         if ft == "regulatory":
             infocol = feature["description"]
-            feature_container.append([seq_region_name, start, end, ft, feature["ID"], feature["ID"], infocol])
+            #print(feature);
+            feature_container.append([seq_region_name, start, end, ft, feature["id"], feature["id"], infocol])
         elif ft == "exon":
             infocol = feature["Parent"]
             feature_container.append([seq_region_name, start, end, ft, infocol,"", ""])
@@ -219,7 +220,8 @@ def get_genomic_features(gc):
     regulatory_features = ['promoter', 'enhancer', 'TF_binding_site']
 
     # Genomic feature file:
-    featureFile = '/lustre/scratch113/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
+    #featureFile = '/lustre/scratch113/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
+    featureFile = '/lustre/scratch119/humgen/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
     featureFile = BedTool(featureFile)
 
     # Extract all lines overlapping with this gene:
