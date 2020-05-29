@@ -64,7 +64,7 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
         if not r.ok:
             print("headers :"+request)
             r.raise_for_status()
-            sys.exit() 
+            sys.exit()
         jData = json.loads(r.text)
         csq=csq.append(pd.DataFrame(jData))
 
@@ -73,12 +73,12 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
     # headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
     # info("\t\t\t🌐   Querying Ensembl VEP (POST) :"+server+ext)
     # r = requests.post(server+ext, headers=headers, data=request)
-     
+
     # if not r.ok:
     #     print("headers :"+request)
     #     r.raise_for_status()
     #     sys.exit()
-     
+
     # jData = json.loads(r.text)
     # csq=pd.DataFrame(jData)
 
@@ -91,7 +91,7 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
 
 def get_coordinates(gene_name):
     '''
-    Function to return the genomic coordinates of a gene submitted (GRCh37)
+    Function to return the genomic coordinates of a gene submitted
     output data: chromosome, start, end, stable ID
     '''
 
@@ -107,6 +107,7 @@ def get_coordinates(gene_name):
     decoded = r.json()
     gc=GeneCoordinates(int(decoded["seq_region_name"]), int(decoded["start"]), int(decoded["end"]), decoded["id"], gene_name)
     return(gc)
+
 
 def get_rsid_in_region(gc):
     c=gc.chrom
@@ -186,6 +187,12 @@ def fetch_single_point(gc, sp_results):
     sp.columns=task.stdout.read().decode('UTF-8').split();
     return(sp)
 
+def read_large_results_file(fn, gene,protein, condition_string):
+    task=subprocess.Popen(["bzgrep", "-w", gene+"."+condition_string, fn], stdout=subprocess.PIPE)
+    results=pd.read_table(task.stdout, header=None, names=["protein","group","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+    return(results[results.protein==protein])
+
+
 def read_variants_from_gene_set(gc, input_monster):
     c=gc.chrom
     variants=pd.read_table(input_monster)
@@ -204,3 +211,9 @@ def read_variants_from_gene_set(gc, input_monster):
     variants.ps=pd.to_numeric(variants.ps, errors='coerce')
     return(variants)
 
+
+def read_variants_from_gene_set_SMMAT(gene, condition_string, smmat_set_file):
+    variantset=pd.read_table("/storage/hmgu/projects/SCALLOP_WGS_meta/from.farm/HA.HP.OY.variantset.noInf.txt", header=None, names=["set", "chr", "ps", "a1", "a2", "weight"])
+    #returns df with columns above
+    variantset.drop(['chr'], axis=1, inplace=True)
+    return(variantset[(variantset.set==gene+"."+condition_string)])

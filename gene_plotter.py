@@ -10,15 +10,15 @@ from bokeh.models import *
 
 def draw_genes(gc, window, width=900, height=400, chop = "No"):
     '''
-    Based on the gene name this function draws selected and overlapping genomic features on 
+    Based on the gene name this function draws selected and overlapping genomic features on
     a bokeh image object created based on the submitted width and height values.
     '''
-   
-   
+
+
     # If we are chomping the gene track, we have to cut back the height:
     if chop == "Yes":
         height = 180
-    
+
     # Based on the gene name get all selected exons and regulatory features that are associated with this gene:
     df = get_genomic_features(gc)
     info('Selected genomic features extracted.')
@@ -26,7 +26,7 @@ def draw_genes(gc, window, width=900, height=400, chop = "No"):
     start_region = df.start.min() - int(window)
     start_region = 0 if start_region < 0 else start_region
     end_region = df.end.max() + int(window)
-    chromosome = df.chrom.tolist()[0].replace("chr", "")
+    chromosome = df.chrom.tolist()[0]
 
     # Return overlapping genomic features:
     overlapping_df = get_overlapping_features(chromosome, start_region, end_region)
@@ -38,11 +38,11 @@ def draw_genes(gc, window, width=900, height=400, chop = "No"):
 
     # Currently that's the lowest y values of the plot:
     y_pos_min = df.y_position.min() - 1.5
-    gene_ypos = pd.Series([ y_pos_min - 0.5 *gene_rank[x] 
+    gene_ypos = pd.Series([ y_pos_min - 0.5 *gene_rank[x]
                            for x in overlapping_df[overlapping_df.feature_type != "regulatory"]["name"]],
         index = overlapping_df[overlapping_df.feature_type != "regulatory"]["name"].index)
     y_pos_min = gene_ypos.min() - 1
-    regulatory_ypos = pd.Series([ y_pos_min - 0.3 * regulatory_rank[x] 
+    regulatory_ypos = pd.Series([ y_pos_min - 0.3 * regulatory_rank[x]
                                  for x in overlapping_df[overlapping_df.feature_type == "regulatory"]["name"]],
         index = overlapping_df[overlapping_df.feature_type == "regulatory"]["name"].index)
     Y_series = gene_ypos.append(regulatory_ypos, ignore_index=False).sort_index()
@@ -60,8 +60,8 @@ def draw_genes(gc, window, width=900, height=400, chop = "No"):
     ##
     ## Based on the returned features let's calculate the boundaries of the plots:
     ##
-    #tools = [WheelZoomTool(), PanTool(), ResetTool()] 
-    p = figure(width=width, height=height, 
+    #tools = [WheelZoomTool(), PanTool(), ResetTool()]
+    p = figure(width=width, height=height,
                y_range = (Y_min,11),
                x_range = (start_region, end_region), tools = "xwheel_zoom,xpan,reset,save")
     p.xgrid.grid_line_color = None
@@ -84,7 +84,7 @@ def draw_genes(gc, window, width=900, height=400, chop = "No"):
         overlapping_regulatory = draw_box(p, overlapping_df[overlapping_df.feature_type == 'regulatory'].copy(), height=0.2)
 
         # Adding object with tooltip:
-        hover = HoverTool(renderers = [selected_exons, selected_genes, selected_regulatory, 
+        hover = HoverTool(renderers = [selected_exons, selected_genes, selected_regulatory,
                           overlapping_exons, overlapping_genes, overlapping_regulatory],
             tooltips=[("Name:", "@name"),("Biotype:", "@biotype")])
         p.add_tools(hover)
@@ -107,10 +107,10 @@ def draw_genes(gc, window, width=900, height=400, chop = "No"):
 def get_overlapping_features(chromosome, start, end):
     '''
     This function retrieves a list of overlapping genomic features based on the provided
-    coordinates. 
-    
+    coordinates.
+
     Retruned features: exon, gene, regulatory features.
-    
+
     Input: chromosome, start, end
     Output: dataframe
         columns: chromosome, start, end, feature type, info (for gene and exon: gene name, or regulatory type)
@@ -128,7 +128,7 @@ def get_overlapping_features(chromosome, start, end):
 
     gene_name_mapping = {}
     feature_container = []
-    
+
     info('List of overlapping features retrieved.')
 
     # Looping through all overlapping features:
@@ -166,27 +166,27 @@ def get_overlapping_features(chromosome, start, end):
             ft[4] = g_name
             ft[6] = g_biotype
 
-    # Return data frame: 
-    overlapping_df = pd.DataFrame(data=feature_container, 
+    # Return data frame:
+    overlapping_df = pd.DataFrame(data=feature_container,
                                   columns=['chromosome', 'start', 'end', 'feature_type', 'name', 'ID', 'biotype'],
                                   index=list(range(len(feature_container))))
 
     # Adding extra column that tells in which row a feature should be plotted:
     #rank = get_gene_rank(overlapping_d[overlapping_d.feature_type == "gene"])
-       
+
     return(overlapping_df)
 
 def get_gene_rank(df):
     '''
     This function ranks the genes from 0 to n to make sure gene with the same
     rank won't overlap. It helps to avoid overlapping genes on the plot.
-    
+
     Returned values: ranks (dict), pos (array)
     '''
-    
+
     ranks = {}
     pos = []
-    
+
     for index, row in df.iterrows():
 
         # For the first row we initalize the array:
@@ -207,7 +207,7 @@ def get_gene_rank(df):
         if flag == 0:
             pos.append(row["end"])
             ranks[row["name"]] = len(pos) - 1
-    
+
     return(ranks)
 
 def get_genomic_features(gc):
@@ -221,8 +221,9 @@ def get_genomic_features(gc):
 
     # Genomic feature file:
     #featureFile = '/lustre/scratch113/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
-    featureFile = '/lustre/scratch119/humgen/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
-    featureFile = BedTool(featureFile)
+    #featureFile = '/lustre/scratch119/humgen/projects/helic/ds26/project_burden/2016.10.10/Linked_features.bed.gz'
+    global linkedFeatures
+    featureFile = BedTool(linkedFeatures)
 
     # Extract all lines overlapping with this gene:
     (chromosome, start, end, gene_ID, name) = (gc.chrom, gc.gstart, gc.gend, gc.gene_id, gc.name)
@@ -230,8 +231,8 @@ def get_genomic_features(gc):
 
     # Creating bed formatted text from the submitted genomic coordinates:
     #print(str(chromosome), start, end, name)
-    geneBed = BedTool([("chr"+str(chromosome), start, end, name)])
-    
+    geneBed = BedTool([(str(chromosome), start, end, name)])
+
     # Overlapping genomic features are selected:
     intersectfeature = geneBed.intersect(featureFile, wb = True, sorted = True).to_dataframe()
     intersectfeature.columns = ['chrom', 'start', 'end', 'name', 'chrom2', 'start2', 'end2',
@@ -251,7 +252,7 @@ def get_genomic_features(gc):
                 bedlines["GENCODE"].append((jsonData["chr"], jsonData["start"], jsonData["end"], jsonData["source"]))
         else:
             if jsonData["class"] in regulatory_features:
-                bedlines["regulatory"].append((jsonData["chr"], jsonData["start"], jsonData["end"], 
+                bedlines["regulatory"].append((jsonData["chr"], jsonData["start"], jsonData["end"],
                                            jsonData["class"], jsonData["regulatory_ID"], jsonData["regulatory_ID"]))
 
     # If GENOCE features are selected in the set, creating dataframe:
@@ -304,7 +305,7 @@ def get_biotype_color(biotype):
     Based on a list of biotypes, this function returns a list colors
     If a biotype is not found, gray color will be assigned
     '''
-    
+
     # Coloring features based on their biotype:
     biotypeColor = {
 
@@ -347,7 +348,7 @@ def draw_box(z, df, height = 0.4):
     '''
     df["top"] = df["y_position"] + height/2
     df['bottom'] = df["y_position"] - height/2
-        
+
     x = z.quad(bottom = 'bottom',
            top = 'top',
            left='start',
