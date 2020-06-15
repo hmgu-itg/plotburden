@@ -34,6 +34,7 @@ window=sys.argv[9]
 output=sys.argv[10]
 linkedFeatures=sys.argv[11]
 chop=sys.argv[12]
+out=sys.argv[13]
 #contdir=sys.argv[13]
 
 import gene_plotter
@@ -241,5 +242,5 @@ if -log10(min(results.values()))>maxlogp:
 
 import pickle
 plotdat=dict(rawdats=rawdats, rawdat=rawdat, maxlogp=maxlogp, gene=gene, gc=gc, resp=resp, lddat=lddat, sp=sp, cohdat=cohdat, co_split=co_split, results=results, bigdf=bigdf, window=window, chop=chop, pheno=pheno, condition_string=condition_string, linkedFeatures=linkedFeatures)
-with open('plotdat.bin', 'wb') as config_dictionary_file:
+with open(out+'.plotdat.bin', 'wb') as config_dictionary_file:
 	pickle.dump(plotdat, config_dictionary_file)
