@@ -1,22 +1,23 @@
 showhide_sp_code="""
-    d=source.get('data')
-    alpha=d.alpha
+    alert("hello")
+    var d=source.data
+    var alpha=d.alpha
     if(cb_obj.active==0){
     // hide sp
-        for (k = 0, len = alpha.length; k < alpha.length; k++){
+        for (var k = 0, len = alpha.length; k < alpha.length; k++){
         if(alpha[k]==0.7){alpha[k]=0}
     }
     }else{
     //show sp
-    for (k = 0, len = alpha.length; k < alpha.length; k++){
+    for (var k = 0, len = alpha.length; k < alpha.length; k++){
         if(alpha[k]==0){alpha[k]=0.7}
     }
     }
     d.alpha=alpha
-    source.trigger('change')
+    source.change.emit()
     """
 changecolor_code="""
-    d=source.get('data')
+    d=source.data
     color=d.color
     if(cb_obj.active==0){
     // no specific color
@@ -34,37 +35,54 @@ changecolor_code="""
         }
     }
     d.color=color
-    source.trigger('change')
+    source.change.emit()
     """
 
+changecohort_code="""
+    console.log(names.data)
+    console.log(names.data.toString())
+    var co_names=names.data.split(',')
+    var source=mainsource.data
+
+    var f = cb_obj.value;
+    for(k=0, len=co_names.length, k<co_names.length;k++){
+        if(f==co_names[k]){
+            source=eval(co_names[k])
+            source.change.emit()
+        }
+    }
+"""
+
 hideburden_code="""
-    d=source.get('data')
+    d=source.data
     alpha=d.alpha
     if(cb_obj.active==0){
     // hide
         alpha[0]=1
 
     }else{
-    //show 
+    //show
             alpha[0]=0
     }
     d.alpha=alpha
-    source.trigger('change')
+    source.change.emit()
     """
 
 ld_hover_code="""
-var lddata = lds.get('data');
-var rdat = rawdat.get('data');
+var lddata = lds.data;
+var rdat = rawdat.data;
 var c=["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43"," #d53e4f"];
-var indices = cb_data.index['1d'].indices;
+    console.log(cb_data.index)
+
+var indices = cb_data.index.indices;
 if(indices.length>0){
-    for (k = 0, len = indices.length; k < indices.length; k++){
-        for (i = 0; i < rdat['ps'].length; i++) {
+    for (var k = 0, len = indices.length; k < indices.length; k++){
+        for (var i = 0; i < rdat['ps'].length; i++) {
             rdat['outalpha'][i]=0
             rdat['outcol'][i]="#3288bd"
         }
         burdenpos=rdat['ps'][indices[k]]
-        for (i = 0; i < rdat['ps'].length; i++) {
+        for (var i = 0; i < rdat['ps'].length; i++) {
             if(rdat['alpha'][i]>0){
                 if(i==indices[k]) {
                     rdat['outcol'][i]=c[8]
@@ -72,10 +90,10 @@ if(indices.length>0){
                 }
                 else {
                 rdat['outcol'][i]=c[0];
-                    for (j = 0; j < lddata['x1'].length; j++) {
+                    for (var j = 0; j < lddata['x1'].length; j++) {
                         if(lddata['x1'][j]==rdat['ps'][i] && lddata['x2'][j]==burdenpos){
                             rdat['outalpha'][i]=1
-                            r2=lddata['r2'][j];
+                            var r2=lddata['r2'][j];
                             switch(true){
                                 case(r2>0.9):
                                 rdat['outcol'][i]=c[8]
@@ -107,7 +125,7 @@ if(indices.length>0){
                         }
                         else if(lddata['x1'][j]==burdenpos && lddata['x2'][j]==rdat['ps'][i]){
                             rdat['outalpha'][i]=1
-                            r2=lddata['r2'][j];
+                            var r2=lddata['r2'][j];
                             switch(true){
                                 case(r2>0.9):
                                 rdat['outcol'][i]=c[8]
@@ -145,29 +163,34 @@ if(indices.length>0){
         }
     }
 }
-rawdat.trigger("change")
+rawdat.change.emit()
 
+"""
+
+hover_test_code="""
+    console.log(cb_data.index.indices)
 """
 
 ldbz_hover_code="""
 var sgl = signalling.data;
 if (sgl['way'][0] == 0) {
     // the signalling dataframe informs us that the first item in the radiolist is selected (highlight points)
-    var lddata = lds.get('data');
-    var rdat = rawdat.get('data');
+    var lddata = lds.data;
+    var rdat = rawdat.data;
     var c = ["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43", " #d53e4f"];
-    var indices = cb_data.index['1d'].indices;
+    console.log(cb_data.index)
+    var indices = cb_data.index.indices;
     if (indices.length > 0) {
         // this bit of code was higher, but was causing a reinit at every mouse move.
         // Now the LD display sticks, and reinit is done when a point is hovered.
-        for (i = 0; i < rdat['ps'].length; i++) {
+        for (var i = 0; i < rdat['ps'].length; i++) {
                     rdat['outalpha'][i] = 0
                     rdat['outcol'][i] = "#3288bd"
                 }
 
-        for (k = 0, len = indices.length; k < indices.length; k++) {
-            burdenpos = rdat['ps'][indices[k]]
-            for (i = 0; i < rdat['ps'].length; i++) {
+        for (var k = 0, len = indices.length; k < indices.length; k++) {
+            var burdenpos = rdat['ps'][indices[k]]
+            for (var i = 0; i < rdat['ps'].length; i++) {
                 if (rdat['alpha'][i] > 0) {
                     if (i == indices[k]) {
                         rdat['outcol'][i] = c[8]
@@ -177,7 +200,7 @@ if (sgl['way'][0] == 0) {
                         for (j = 0; j < lddata['x1'].length; j++) {
                             if (lddata['x1'][j] == rdat['ps'][i] && lddata['x2'][j] == burdenpos) {
                                 rdat['outalpha'][i] = 1
-                                r2 = lddata['r2'][j];
+                                var r2 = lddata['r2'][j];
                                 switch (true) {
                                     case (r2 > 0.9):
                                         rdat['outcol'][i] = c[8]
@@ -246,15 +269,17 @@ if (sgl['way'][0] == 0) {
             }
         }
     }
-    rawdat.trigger("change")
+    rawdat.change.emit()
 
 } else if (sgl['way'][0] == 1) {
     // the signalling dataframe indicates that the user wants a fountain display
-    var lddata = lds.get('data');
-    var rdat = rawdat.get('data');
-    var bzdata = bezier.get('data');
+    var lddata = lds.data;
+    var rdat = rawdat.data;
+    var bzdata = bezier.data;
     var c = ["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43", " #d53e4f"];
-    var indices = cb_data.index['1d'].indices;
+        console.log(cb_data.index)
+
+    var indices = cb_data.index.indices;
     if (indices.length > 0) {
         // Idem here, for speed, we reinitialise only if another proper point is hovered.
         bzdata['x0'] = [];
@@ -266,14 +291,14 @@ if (sgl['way'][0] == 0) {
         bzdata['cy0'] = [];
         bzdata['cy1'] = [];
         bzdata['col'] = [];
-        for (k = 0, len = indices.length; k < indices.length; k++) {
+        for (var k = 0, len = indices.length; k < indices.length; k++) {
             var burdenpos = rdat['ps'][indices[k]]
             var spval = rdat['logsp'][indices[k]]
-            for (i = 0; i < rdat['ps'].length; i++) {
+            for (var i = 0; i < rdat['ps'].length; i++) {
                 if (rdat['alpha'][i] > 0) {
-                    for (j = 0; j < lddata['x1'].length; j++) {
+                    for (var j = 0; j < lddata['x1'].length; j++) {
                         if (lddata['x1'][j] == rdat['ps'][i] && lddata['x2'][j] == burdenpos) {
-                            r2 = lddata['r2'][j];
+                            var r2 = lddata['r2'][j];
                             if (r2 > 0.1) {
                                 bzdata['x0'][i] = burdenpos;
                                 bzdata['cx0'][i] = burdenpos;
@@ -313,7 +338,7 @@ if (sgl['way'][0] == 0) {
                                     bzdata['col'][i] = c[9]
                             }
                         } else if (lddata['x1'][j] == burdenpos && lddata['x2'][j] == rdat['ps'][i]) {
-                            r2 = lddata['r2'][j];
+                            var r2 = lddata['r2'][j];
                             if (r2 > 0.1) {
                                 bzdata['x0'][i] = burdenpos;
                                 bzdata['cx0'][i] = burdenpos;
@@ -361,7 +386,7 @@ if (sgl['way'][0] == 0) {
             }
         }
     }
-    bezier.trigger("change")
+    bezier.change.emit()
 }
 """
 
@@ -369,7 +394,7 @@ changehover_code="""
 var sgl=signalling.data;
 if(cb_obj.active==0){
     // used to be fountain, is now highlight. Destroy fountain.
-    var bzdata = bezier.get('data');
+    var bzdata = bezier.data;
     bzdata['x0'] = [];
     bzdata['x1'] = [];
     bzdata['y0'] = [];
@@ -379,18 +404,18 @@ if(cb_obj.active==0){
     bzdata['cy0'] = [];
     bzdata['cy1'] = [];
     bzdata['col'] = [];
-    bezier.trigger("change");
+    bezier.change.emit();
 }else if (cb_obj.active==1){
     // used to be highlight, is now fountain. Destroy highlight.
-        var rdat = rawdat.get('data');
+        var rdat = rawdat.data;
     for (i = 0; i < rdat['ps'].length; i++) {
             rdat['outalpha'][i] = 0
             rdat['outcol'][i] = "#3288bd"
     }
-    rawdat.trigger("change")
+    rawdat.change.emit()
 }
 sgl['way'][0]=cb_obj.active;
-signalling.trigger("change")
+signalling.change.emit()
 """
 
 displayhits_code="""
@@ -410,5 +435,5 @@ displayhits_code="""
         }
     }
     d['alpha']=alpha
-    source.trigger('change')
+    source.change.emit()
     """

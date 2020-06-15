@@ -3,6 +3,9 @@ import urllib.request
 import urllib.parse
 import pandas as pd
 import numpy as np
+from pandas import notnull, isnull
+from numpy import log10, append, nan
+
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
@@ -49,6 +52,7 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
     global server
     e.loc[(e['ensembl_rs']=="novel") & (e[a1col]==e[a2col]),'ensembl_consequence']='double allele'
     novelsnps=e.loc[(e['ensembl_rs']=="novel") & (e['ensembl_consequence']!='double allele'),]
+    info("Sending query for "+str(len(novelsnps.index))+" novel SNPs.")
     csq=pd.DataFrame()
     if novelsnps.empty:
         return e
@@ -187,11 +191,85 @@ def fetch_single_point(gc, sp_results):
     sp.columns=task.stdout.read().decode('UTF-8').split();
     return(sp)
 
+def fetch_single_point_meta(gc, sp_results, co_names):
+    c=gc.chrom
+    start=gc.start
+    end=gc.end
+    spfiles=sp_results.split(",")
+    co_names=co_names.split(",")
+    co_names.append("meta")
+    if len(spfiles)!=len(co_names):
+        sys.exit("cohort and single-point information not coherent (both must be comma-separated)")
+    i=0
+    import os.path
+    retdf=pd.DataFrame()
+    for file in spfiles:
+        if not os.path.isfile(file):
+            sys.exit("Single-point file "+file+" is not reachable.")
+        sp = pd.DataFrame();
+        try:
+            task = subprocess.Popen(["tabix", file, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE);
+            sp=pd.read_table(task.stdout);
+            task = subprocess.Popen(["zgrep", "-m1", "chr", file], stdout=subprocess.PIPE);
+            sp.columns=task.stdout.read().decode('UTF-8').replace('#', '').split();
+        except:
+            e = sys.exc_info()[0]
+            info(e)
+            sys.exit("Error while running tabix on single-point file "+file+" is not reachable.")
+
+        if sp.empty:
+            sys.exit("Tabixing "+file+"for region "+str(c)+":"+str(start)+"-"+str(end)+" returned 0 rows.")
+        if(co_names[i]=="meta"):
+            sp.rename(columns={"MarkerName" : "ps"}, inplace=True)
+        sp=sp.add_suffix(co_names[i])
+        if retdf.empty:
+            retdf=sp
+            retdf['ps']=retdf["ps"+co_names[i]]
+            retdf['chr']=retdf["chr"+co_names[i]]
+            retdf['allele0']=retdf["allele0"+co_names[i]]
+            retdf['allele1']=retdf["allele1"+co_names[i]]
+        else:
+
+            retdf=pd.merge(retdf, sp, left_on="ps", right_on="ps"+co_names[i], how="outer")
+            ## ALSO THIS WOULD WORK df.loc[df['foo'].isnull(),'foo'] = df['bar']
+            retdf.ps.fillna(retdf["ps"+co_names[i]], inplace=True)
+            retdf.chr.fillna(retdf["chr"+co_names[i]], inplace=True)
+        i=i+1
+    return(retdf)
+
 def read_large_results_file(fn, gene,protein, condition_string):
     task=subprocess.Popen(["bzgrep", "-w", gene+"."+condition_string, fn], stdout=subprocess.PIPE)
     results=pd.read_table(task.stdout, header=None, names=["protein","group","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
     return(results[results.protein==protein])
 
+def read_sc_results_file(fn, gene,pheno, condition_string):
+    task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
+    results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+    results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
+    return(results.O_minp.iloc[0])
+
+def read_meta_results_file(fn, gene,pheno, condition_string):
+    task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
+    results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+    results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
+    return(results.O_minp.iloc[0])
+
+def read_burden_ps(co_names, smmat_out_file, ensid, pheno, condition_string):
+    co_names=co_names.split(",")
+    smmat_out_file=smmat_out_file.split(",")
+    if len(smmat_out_file)!=(len(co_names)+1):
+        print(co_names)
+        print(smmat_out_file)
+        sys.exit("cohort and meta-analysis information not coherent (both must be comma-separated)")
+    i=0
+    burdp={}
+    for file in smmat_out_file:
+    	if(i==len(co_names)):
+    		burdp["meta"]=read_meta_results_file(file, ensid, pheno, condition_string)
+    	else:
+    		burdp[co_names[i]]=read_sc_results_file(file, ensid, pheno, condition_string)
+    	i=i+1
+    return(burdp)
 
 def read_variants_from_gene_set(gc, input_monster):
     c=gc.chrom
@@ -217,3 +295,119 @@ def read_variants_from_gene_set_SMMAT(gene, condition_string, smmat_set_file):
     #returns df with columns above
     variantset.drop(['chr'], axis=1, inplace=True)
     return(variantset[(variantset.set==gene+"."+condition_string)])
+
+def produce_meta_df(gc, sp, variants, vcf_files, co_names):
+    #      chrMANOLIS rsMANOLIS  psMANOLIS  n_missMANOLIS allele1MANOLIS allele0MANOLIS  afMANOLIS  betaMANOLIS  seMANOLIS  l_remleMANOLIS  l_mleMANOLIS
+    #p_waldMANOLIS  p_lrtMANOLIS  p_scoreMANOLIS           ps  chr allele0 allele1  chrPomak      rsPomak      psPomak  n_missPomak allele1Pomak allele0Po
+    #mak  afPomak  betaPomak  sePomak  l_remlePomak  l_mlePomak   p_waldPomak    p_lrtPomak  p_scorePomak  chrmeta       psmeta Allele1meta Allele2meta  F
+    #req1meta  FreqSEmeta  MinFreqmeta  MaxFreqmeta  Effectmeta  StdErrmeta   P-valuemeta Directionmeta  HetISqmeta  HetChiSqmeta  HetDfmeta  HetPValmeta
+    # NMISSTOTALmeta       consequence pheno    ensembl_rs ensembl_consequence
+    c=gc.chrom
+    start = gc.start
+    end = gc.end
+    gene_start=gc.gstart
+    gene_end=gc.gend
+    ensid=gc.gene_id
+    rawdat=pd.merge(sp, variants, on='ps', how='outer')
+    if rawdat[rawdat.chr.isnull()].ps.size > 0 :
+    	warn(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants from the gene set were not found in the single point.")
+    rawdat.dropna(subset=['chr'], inplace=True)
+
+    info("Calculating LD...")
+    info("getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
+    import os
+    import subprocess
+    task = subprocess.Popen([contdir+"/getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
+    print(task.stderr)
+    ld=pd.read_table(task.stdout, sep='\s+');
+    info("Computed LD between ", str(len(ld.index)), " variant pairs.")
+
+    ## Defining plot-specific data
+    info("Defining plot-specific data...")
+    rawdat['radii']=3
+    denom=rawdat.weight[rawdat.weight.notnull()]
+    if len(denom):
+    	denom=max(denom)
+    else:
+    	denom=1
+    rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/denom
+    rawdat['alpha']=0
+    rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
+    rawdat['alpha_prevsig']=0
+    rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
+    from bokeh.palettes import PuOr8 as palette
+    from bokeh.palettes import Viridis8 as palWeight
+    # Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
+    palWeight=[x for x in palWeight]
+    palWeight.append("#939393")
+    rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.Freq1meta]
+    rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
+    rawdat['color']="#1F77B4"
+    rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+    rawdat['outcolor']="#3288bd"
+    rawdat["outalpha"]=0
+    return(rawdat, ld)
+
+
+
+def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_set_file, pheno, condition_string, coname, megasp, variants):
+    from pandas import notnull, isnull
+    from numpy import log10, append, nan
+    global contdir
+    c=gc.chrom
+    start = gc.start
+    end = gc.end
+    gene_start=gc.gstart
+    gene_end=gc.gend
+    ensid=gc.gene_id
+    ## Get the single point results
+    sp=megasp.loc[:, megasp.columns.str.endswith(coname) | megasp.columns.isin(['consequence', 'pheno', 'ensembl_rs', 'ensembl_consequence'])]
+    sp.columns=sp.columns.str.replace(coname+'$', '')
+    sp=sp[sp.chr.notnull()]
+    ## Get the weights and variants in burden
+
+
+    rawdat=pd.merge(sp, variants, on='ps', how='outer')
+    if rawdat[rawdat.chr.isnull()].ps.size > 0 :
+    	warn(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants from the gene set were not found in the single point.")
+    rawdat.dropna(subset=['chr'], inplace=True)
+
+
+
+    ## Calculate LD
+    info("Calculating LD...")
+    info("getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
+    import os
+    import subprocess
+    task = subprocess.Popen([contdir+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
+    ld=pd.read_table(task.stdout, sep='\s+');
+    os.remove("plink.log")
+    os.remove("plink.nosex")
+
+
+
+    ## Defining plot-specific data
+    info("Defining plot-specific data...")
+    rawdat['radii']=3
+    denom=rawdat.weight[rawdat.weight.notnull()]
+    if len(denom):
+    	denom=max(denom)
+    else:
+    	denom=1
+    rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/denom
+    rawdat['alpha']=0
+    rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
+    rawdat['alpha_prevsig']=0
+    rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
+    from bokeh.palettes import PuOr8 as palette
+    from bokeh.palettes import Viridis8 as palWeight
+    # Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
+    palWeight=[x for x in palWeight]
+    palWeight.append("#939393")
+    rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.af]
+    rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
+    rawdat['color']="#1F77B4"
+    rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+    rawdat['outcolor']="#3288bd"
+    rawdat["outalpha"]=0
+    return(rawdat, ld)
