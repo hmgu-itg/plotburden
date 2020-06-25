@@ -210,19 +210,19 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 		if not os.path.isfile(file):
 			sys.exit("Single-point file "+file+" is not reachable.")
 		sp = pd.DataFrame();
-		def logmp(x):
-			return np.float(log10(mpf(x)))
-		getlogp = frompyfunc(logmp, 1, 1)
+		# def logmp(x):
+		# 	return np.float(log10(mpf(x)))
+		# getlogp = frompyfunc(logmp, 1, 1)
 		try:
 			task = subprocess.Popen(["zgrep", "-m1", "chr", file], stdout=subprocess.PIPE);
 			cols = task.stdout.read().decode('UTF-8').replace('#', '').split();
 			task = subprocess.Popen(["tabix", file, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE);
 			if(co_names[i]=="meta"):
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"P-value":np.unicode_});
-				sp["logp"]=-1*getlogp(sp["P-value"])
+				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["P-value"]]
 			else:
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"p_score":np.unicode_});
-				sp["logp"]=-1*getlogp(sp["p_score"])
+				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["p_score"]]
 		except:
 			e = sys.exc_info()[0]
 			info(e)
