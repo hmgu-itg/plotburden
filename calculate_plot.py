@@ -174,18 +174,19 @@ maxlogp=0
 for n in co_names.split(","):
 	rawdats.append(cohdat[i])
 	rawdat=cohdat[i]
-	if -log10(rawdat.p_score.min())>maxlogp:
-		maxlogp=-log10(rawdat.p_score.min())
-	cohdat[i]=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs, rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
+#	if -log10(rawdat.p_score.min())>maxlogp:
+	if rawdat.logp.max()>maxlogp:
+		maxlogp=rawdat.logp.max()
+	cohdat[i]=dict(ps=rawdat.ps, logsp=rawdat.logp, radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs, rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
 	i=i+1
 
 ## meta-analysis (beware, ALL columns are as is)
 rawdats.append(cohdat[i])
 rawdat=cohdat[i]
 print(rawdat.columns)
-if -log10(rawdat["P-valuemeta"].min())>maxlogp:
-	maxlogp=-log10(rawdat["P-valuemeta"].min())
-cohdat[i]=dict(ps=rawdat.ps, logsp=-log10(rawdat["P-valuemeta"]), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.chr.astype(str)+":"+rawdat.ps.astype(str), rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
+if rawdat.logp.max()>maxlogp:
+	maxlogp=rawdat.logp.max()
+cohdat[i]=dict(ps=rawdat.ps, logsp=rawdat.logp, radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.chr.astype(str)+":"+rawdat.ps.astype(str), rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
 
 
 ## Creating the df containing ALL points coloured by cohort
@@ -215,12 +216,12 @@ for data in cohdat:
 
 
 ## append the p ranges to sp for the m/a segments
-for co in co_split:
-    if co=="meta":
-        col='P-valuemeta'
-    else:
-        col='p_score'+co
-    sp['logp'+co]=-log10(sp[col])
+# for co in co_split:
+#     if co=="meta":
+#         col='P-valuemeta'
+#     else:
+#         col='p_score'+co
+#     sp['logp'+co]=-log10(sp[col])
 
 
 sp['minp']=sp[["logp"+s for s in co_split]].min(axis=1)
@@ -236,6 +237,8 @@ sp.dropna(subset=['chr'], inplace=True)
 # with open('rawdat.bin', 'wb') as config_dictionary_file:
 # 	pickle.dump(rawdats, config_dictionary_file)
 
+## we modified the whole code to have logp calculated within a helper Function
+## burden logp very unklikely to be that low so we leave logp calculation as is
 rawdat=rawdats[0]
 if -log10(min(results.values()))>maxlogp:
 	maxlogp=-log10(min(results.values()))
