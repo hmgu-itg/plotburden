@@ -220,9 +220,11 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 			if(co_names[i]=="meta"):
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"P-value":np.unicode_});
 				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["P-value"]]
+				sp=sp.astype({"logp" : "float64"})
 			else:
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"p_score":np.unicode_});
 				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["p_score"]]
+				sp=sp.astype({"logp" : "float64"})
 		except:
 			e = sys.exc_info()[0]
 			info(e)
