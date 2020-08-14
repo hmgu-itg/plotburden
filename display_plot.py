@@ -265,6 +265,8 @@ def callback_meta(arg):
 
 p3 = figure(width=430, title="Forest Plot (enable show meta-analysis and select points)", y_range=[-1, len(co_split)])
 def generate_forestplot_df(selected):
+	print("selected points:")
+	print(selected)
 	directions=list(selected.Directionmeta)
 	ptdf=[]
 	k=0
