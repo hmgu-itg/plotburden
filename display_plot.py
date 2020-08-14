@@ -56,6 +56,7 @@ linkedFeatures=plotdat['linkedFeatures']
 cohort_color=bigdf[["cocolor", "cohort"]]
 cohort_color.drop_duplicates(inplace=True)
 cohort_color=cohort_color.set_index('cohort').to_dict()
+cohort_color=cohort_color['cocolor']
 print(cohort_color)
 
 c=gc.chrom
