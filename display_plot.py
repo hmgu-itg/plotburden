@@ -53,7 +53,7 @@ pheno=plotdat['pheno']
 condition_string=plotdat['condition_string']
 linkedFeatures=plotdat['linkedFeatures']
 
-
+print(bigdf.head())
 c=gc.chrom
 start = gc.start
 end = gc.end
@@ -291,6 +291,7 @@ p3.yaxis.ticker = FixedTicker(ticks=list(range(0, len(co_split))))
 namedict = { i : co_split[i] for i in range(0, len(co_split) ) }
 p3.yaxis.formatter = FuncTickFormatter(args=dict(namedict=namedict), code="""return(namedict[tick])""")
 
+#callback for when user selects meta points (draws segments, colors, etc)
 def callback_pointclicked(attr, old, new):
 	df=pd.DataFrame(source.data)
 	print("Length of df is "+str(len(df.index)))
@@ -341,7 +342,7 @@ control_click.on_click(callback_click)
 #ld_hovertool=HoverTool(callback=ld_hover, renderers=[mainplot_points])
 #p1.add_tools(ld_hovertool)
 
-window=100000
+#window=100000
 chop=False
 gene_plotter.linkedFeatures="Linked_features.bed.gz"
 
