@@ -66,9 +66,11 @@ So far, the program works only with the output of [GEMMA](http://www.xzlab.org/s
 You will first need to generate a binary file that contains plot data, then pass that file to a visualisation script. This is easily automated in a script with your own data paths. In the following documentation, the script takes information from _i_ cohorts, plus the meta-analysis.
 
 ```bash
-calculate_plot.py [phenotype_name] [gene_name] [condition] [variant_set_file] single_cohort_RV_results_file_0[,single_cohort_RV_results_file_1[,...]]],meta_analysis_RV_results_file cohort_name_0[,cohort_name_1[,...]] single_cohort_SP_results_file_0[,single_cohort_SP_results_file_1[,...]]],meta_analysis_SP_results_file
-single_cohort_VCF_0[,single_cohort_VCF_1[,...]]
-[window] [output] [linked_features] [chopping]
+calculate_plot.py [phenotype_name] [gene_name] [condition] [variant_set_file] \
+                  single_cohort_RV_results_file_0[,single_cohort_RV_results_file_1[,...]]],meta_analysis_RV_results_file cohort_name_0[,cohort_name_1[,...]] \
+                  single_cohort_SP_results_file_0[,single_cohort_SP_results_file_1[,...]]],meta_analysis_SP_results_file \
+                  single_cohort_VCF_0[,single_cohort_VCF_1[,...]] \
+                  [window] [output] [linked_features] [chopping]
 ```
 
 * **phenotype_name** the phenotype name used in the rare variant output files (e.g. _LDL_).
