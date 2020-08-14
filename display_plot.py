@@ -292,7 +292,7 @@ def generate_forestplot_df(selected):
 	return(ptdf)
 forestsource=ColumnDataSource(dict(x=[], y=[], start=[], end=[], color=[]))
 p3.segment(x0=0, x1=0, y0=-20, y1=20, color="#F4A582", line_width=2, line_dash="dashed")
-p3.square(x='x', y='y', color='color' source=forestsource)
+p3.square(x='x', y='y', color='color', source=forestsource)
 p3.segment(x0='start',x1='end', y0='y', y1='y', color='color', source=forestsource)
 p3.yaxis.ticker = FixedTicker(ticks=list(range(0, len(co_split))))
 namedict = { i : co_split[i] for i in range(0, len(co_split) ) }
