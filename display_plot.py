@@ -53,7 +53,10 @@ pheno=plotdat['pheno']
 condition_string=plotdat['condition_string']
 linkedFeatures=plotdat['linkedFeatures']
 
-print(bigdf.head())
+cohort_color=bigdf[["cocolor", "cohort"]]
+cohort_color.drop_duplicates(inplace=True)
+print(cohort_color)
+
 c=gc.chrom
 start = gc.start
 end = gc.end
