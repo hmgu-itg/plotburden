@@ -55,6 +55,7 @@ linkedFeatures=plotdat['linkedFeatures']
 
 cohort_color=bigdf[["cocolor", "cohort"]]
 cohort_color.drop_duplicates(inplace=True)
+cohort_color=cohort_color.set_index('cohort').to_dict()
 print(cohort_color)
 
 c=gc.chrom
@@ -284,14 +285,15 @@ def generate_forestplot_df(selected):
 			y=k
 			start=x-selected['se'+n].squeeze()
 			end=x+selected['se'+n].squeeze()
-		ptdf.append([x,y,start,end])
+		color=cohort_color[n]
+		ptdf.append([x,y,start,end, color])
 		k=k+1
-	ptdf=pd.DataFrame(ptdf, columns=["x", "y", "start", "end"])
+	ptdf=pd.DataFrame(ptdf, columns=["x", "y", "start", "end", "color"])
 	return(ptdf)
-forestsource=ColumnDataSource(dict(x=[], y=[], start=[], end=[]))
+forestsource=ColumnDataSource(dict(x=[], y=[], start=[], end=[], color=[]))
 p3.segment(x0=0, x1=0, y0=-20, y1=20, color="#F4A582", line_width=2, line_dash="dashed")
-p3.square(x='x', y='y', source=forestsource)
-p3.segment(x0='start',x1='end', y0='y', y1='y', source=forestsource)
+p3.square(x='x', y='y', color='color' source=forestsource)
+p3.segment(x0='start',x1='end', y0='y', y1='y', color='color', source=forestsource)
 p3.yaxis.ticker = FixedTicker(ticks=list(range(0, len(co_split))))
 namedict = { i : co_split[i] for i in range(0, len(co_split) ) }
 p3.yaxis.formatter = FuncTickFormatter(args=dict(namedict=namedict), code="""return(namedict[tick])""")
