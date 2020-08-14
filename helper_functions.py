@@ -6,8 +6,8 @@ import numpy as np
 from pandas import notnull, isnull
 from numpy import log10, append, nan
 from numpy import frompyfunc
-from mpmath import *
-
+import mpmath
+from mpmath import mpf
 
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
@@ -214,16 +214,25 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 		# 	return np.float(log10(mpf(x)))
 		# getlogp = frompyfunc(logmp, 1, 1)
 		try:
-			task = subprocess.Popen(["zgrep", "-m1", "chr", file], stdout=subprocess.PIPE);
+			task = subprocess.Popen(["zgrep", "-m1", "", file], stdout=subprocess.PIPE);
 			cols = task.stdout.read().decode('UTF-8').replace('#', '').split();
+			print(co_names[i])
+			print(file)
 			task = subprocess.Popen(["tabix", file, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE);
+			print(cols)
+			if cols[0]=="Chr":
+				# GCTA input: convert
+				cols=("chr", "rs", "ps", "allele1", "allele0", "af", "beta", "se", "p_score")
 			if(co_names[i]=="meta"):
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"P-value":np.unicode_});
-				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["P-value"]]
+				print(sp.head())
+				sp=sp[sp.notnull()['Effect']]
+				sp["logp"]=[-1*np.float64(mpmath.log10(mpf(x))) for x in sp["P-value"]]
 				sp=sp.astype({"logp" : "float64"})
 			else:
 				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"p_score":np.unicode_});
-				sp["logp"]=[-1*float(str(log10(mpf(x)))) for x in sp["p_score"]]
+				print(sp.head())
+				sp["logp"]=[-1*np.float64(mpmath.log10(mpf(x))) for x in sp["p_score"]]
 				sp=sp.astype({"logp" : "float64"})
 		except:
 			e = sys.exc_info()[0]
@@ -233,7 +242,8 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 		if sp.empty:
 			sys.exit("Tabixing "+file+"for region "+str(c)+":"+str(start)+"-"+str(end)+" returned 0 rows.")
 		if(co_names[i]=="meta"):
-			sp.rename(columns={"MarkerName" : "ps"}, inplace=True)
+			if "ps" not in sp.columns:
+				sp.rename(columns={"MarkerName" : "ps"}, inplace=True)
 		sp=sp.add_suffix(co_names[i])
 		if retdf.empty:
 			retdf=sp
@@ -256,14 +266,24 @@ def read_large_results_file(fn, gene,protein, condition_string):
 	return(results[results.protein==protein])
 
 def read_sc_results_file(fn, gene,pheno, condition_string):
+	info("searching for burden:", pheno, "/", gene, "in", fn)
 	task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
 	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
 	return(results.O_minp.iloc[0])
 
 def read_meta_results_file(fn, gene,pheno, condition_string):
-	task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
-	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+	info(gene)
+	info(fn)
+	task = subprocess.Popen(["zgrep", "-m1", "", fn], stdout=subprocess.PIPE);
+	cols = task.stdout.read().decode('UTF-8').replace('#', '').split();
+	task=subprocess.Popen(["zgrep", "-w", gene, fn], stdout=subprocess.PIPE)
+	info("Searching for "+gene+" in", fn)
+	results=pd.read_table(task.stdout, header=None, names=cols);
+	info("obtained", str(len(results.index)), "records")
+	if "pheno" not in results.columns:
+		results.rename(columns={'protein': 'pheno'}, inplace=True)
+	results.columns=results.columns.str.replace('.', '_')
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
 	return(results.O_minp.iloc[0])
 

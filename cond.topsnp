@@ -41,4 +41,4 @@ SMMAT.out=SMMAT(null.obj = model0,
             rho=(0:10)/10,
             use.minor.allele=T,
             Garbage.Collection = T)
-print(SMMAT.out)'
+print(SMMAT.out$O.minp)' 2>&1
