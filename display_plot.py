@@ -3,7 +3,6 @@ import subprocess
 import pandas as pd
 from pandas import notnull, isnull
 import numpy as np
-from numpy import log10, append, nan
 import numpy as np
 import re
 import json, requests, asr
@@ -19,6 +18,7 @@ import helper_functions
 from helper_functions import *
 from callbacks import *
 from gene_plotter import *
+from numpy import log10, append, nan
 
 
 import pickle
@@ -116,9 +116,9 @@ p1.segment(y0='y0', y1='y1' , x0='x0', x1='x1', color='color', alpha='alpha', so
 
 
 x0=rawdat.ps[100]
-y0=-log10(rawdat.p_score[100])
+y0=rawdat.logp[100]
 x1=rawdat.ps[400]
-y1=-log10(rawdat.p_score[400])
+y1=rawdat.logp[400]
 bzier=ColumnDataSource(data=dict(x0=[], y0=[], x1=[], y1=[], cx0=[], cy0=[], cx1=[], cy1=[], col=[]))
 p1.bezier(x0='x0', y0='y0', x1='x1', y1='y1', cx0='cx0', cy0='cy0', cx1='cx1', cy1='cy1', color='col', line_width=2, source=bzier)
 
@@ -203,9 +203,9 @@ def callback_showsp(arg):
 	#source.data=cohdat[i]
 	if control_source.active==(len(co_split)-1):
 		## we are in m/a
-		source.data=dict(ps=currawdat.ps, logsp=-log10(currawdat["P-valuemeta"]), radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
+		source.data=dict(ps=currawdat.ps, logsp=currawdat.logpmeta, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	else:
-		source.data=dict(ps=currawdat.ps, logsp=-log10(currawdat.p_score), radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.rs, rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
+		source.data=dict(ps=currawdat.ps, logsp=currawdat.logp, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.rs, rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	callback_chcolor(chcolor.active)
 	callback_burden(burden.active)
 

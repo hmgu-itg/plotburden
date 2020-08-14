@@ -1,6 +1,6 @@
 # PlotBurden : an interactive tool for visualising results of rare variant burden associations
 
-> Warning : This tool is based on the `bokeh` Python plotting library. As the developers do not seem to care much about reverse compatibility, a lot of the features used by `plotburden` are broken as of 0.12.5 (points appearing out of the plotting region, display bugs in the LD blocks, etc.) We therefore strongly advise users to install version 0.12.4 of the library, e.g. with `pip install bokeh==0.12.4`. We will try to make `plotburden` compatible with the latest version when `bokeh` 1.0 is released.
+> Update: `plotburden` should now be compatible with the latest version of bokeh. We have transitioned it to a bokeh server application (see below for details).
 
 This tool is aimed at helping researchers explore the results of their gene-based burden testing analyses. It links together results from a burden test, single point association data at the locus and online resources in a single customisable interactive plot. It connects to Ensembl to fetch relevant information about the variants (MAF, rsIDs) and the functional context (overlapping regulatory or genic features, prior evidence of association...). More precisely, it can help answer the following questions:
 * Which variants drive my burden?
