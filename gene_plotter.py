@@ -151,8 +151,12 @@ def get_overlapping_features(chromosome, start, end):
         elif ft == "transcript":
             gene_name_mapping[feature["id"]] = feature["Parent"]
         elif ft == "gene":
-            infocol = feature["external_name"]
-            gene_name_mapping[feature["id"]] = [feature["external_name"], feature["biotype"]]
+            try:
+                infocol = feature["external_name"]
+            except KeyError:
+                infocol = feature["gene_id"]
+                
+            gene_name_mapping[feature["id"]] = [infocol, feature["biotype"]]
             feature_container.append([seq_region_name, start, end, ft, infocol, feature["id"], feature["biotype"]])
 
     info('List of overlapping features processed.')
