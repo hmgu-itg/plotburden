@@ -74,8 +74,9 @@ from bokeh.models.widgets import Button, RadioButtonGroup, Div
 from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis, SaveTool
 
 ### Initialising the burden p-value and corresponding segment
-gc2=get_coordinates(gene);
-logburdenp=-1*log10(results[co_split[0]])
+gc2=get_coordinates(gene)
+burden_p = results[co_split[0]]
+logburdenp = -1*log10(burden_p)
 if (max(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps'])-min(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps']) < 500):
 	eseg=gc2.end
 	sseg=gc2.start
@@ -187,7 +188,9 @@ def callback_changesource(arg):
 	else:
 		eseg=max(rawdats[arg].loc[rawdats[arg].weight.notnull(), 'ps'])
 		sseg=min(rawdats[arg].loc[rawdats[arg].weight.notnull(), 'ps'])
-	segsource.data=dict(y0=[-1*log10(results[co_split[arg]])], y1=[-1*log10(results[co_split[arg]])], x0=[sseg], x1=[eseg], alpha=[1], color=["firebrick"])
+	burden_p = results[co_split[arg]]
+	logburdenp = -1*log10(burden_p)
+	segsource.data=dict(y0=[logburdenp], y1=[logburdenp], x0=[sseg], x1=[eseg], alpha=[1], color=["firebrick"])
 	## This changes LD
 	ld=lddat[control_source.active]
 	ld_source.data=dict(x1=ld.BP_A, x2=ld.BP_B, r2=ld.R2, dp=ld.DP)
@@ -371,7 +374,7 @@ TableColumn(field="ensembl_rs", title="RSid"),
 TableColumn(field="ensembl_consequence", title="most severe consequence"),
 TableColumn(field="weight", title="weight")
 ]
-k=0
+k = 0
 for n in co_split:
 	if(n=="meta"):
 		col_signals_table.append(TableColumn(field="P-valuemeta", title="P (meta)"))
@@ -388,18 +391,25 @@ for n in co_split:
 		col_signals_table.append(TableColumn(field="allele1"+n, title="A1 ("+n+")"))
 		col_signals_table.append(TableColumn(field="allele0"+n, title="A2 ("+n+")"))
 		col_signals_table.append(TableColumn(field="af"+n, title="AF ("+n+")"))
-	k=k+1
+	k = k + 1
 
 signals_table=DataTable(source=metasegsource, columns=col_signals_table, width=1900)
 p_sep=Div(text="""<h3>Signals (click on "show meta-analysis" and select points):</h3>""", width=1900)
 
 #bbox=column(row([p_source, control_source]),row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]), row([p_meta, control_meta]))
 bbox=column(row([p_source, control_source]),row([p_rbg, rbg]), row([p_chcolor, chcolor]), row([p_burden, burden]), row([p_ld, control_ld]), row([p_signals, control_signals]), row([p_click, control_click]))
+
+# Right hand side Burden p-value display table
+burden_p_sep = Div(text="<h3>Burden p-values</h3>", height=50, width=430)
+burden_p_data = ColumnDataSource(data = {n: ['{:0.5e}'.format(results[n])] for n in co_split})
+burden_p_cols = [TableColumn(field=n, title=n) for n in co_split]
+burden_p_table = DataTable(source=burden_p_data, columns=burden_p_cols, height=55, width=430)
+
 l=layout([
 [p_title],
 [
 [p1,p2],
-[bbox,p3]
+[bbox, burden_p_sep, burden_p_table, p3]
 ],
 [p_sep],
 [signals_table]
