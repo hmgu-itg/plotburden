@@ -138,7 +138,7 @@ ldbz_hover = CustomJS(args=dict(lds=ld_source, rawdat=source, bezier=bzier, sign
 changehover = CustomJS(args=dict(signalling=signalling, rawdat=source, bezier=bzier), code=changehover_code)
 testhover=CustomJS(args=dict(source=source), code=hover_test_code)
 
-p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=[("SNPid", "@snpid"), ("RSid", "@rs"), ("MAF", "@maf"), ("consequence", "@csq")], renderers=[mainplot_points]))
+p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=[("SNPid", "@snpid"), ("RSid", "@rs"), ("p-value", "@p_value"), ("MAF", "@maf"), ("consequence", "@csq")], renderers=[mainplot_points]))
 
 taptool = p1.select(type=TapTool)
 taptool.callback = OpenURL(url="http://www.ensembl.org/Homo_sapiens/Variation/Explore?db=core;v=@rs;vdb=variation")
@@ -208,9 +208,9 @@ def callback_showsp(arg):
 	#source.data=cohdat[i]
 	if control_source.active==(len(co_split)-1):
 		## we are in m/a
-		source.data=dict(ps=currawdat.ps, logsp=currawdat.logpmeta, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
+		source.data=dict(ps=currawdat.ps, p_value=currawdat.p_score, logsp=currawdat.logpmeta, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	else:
-		source.data=dict(ps=currawdat.ps, logsp=currawdat.logp, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.rs, rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
+		source.data=dict(ps=currawdat.ps, p_value=currawdat.p_score, logsp=currawdat.logp, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.rs, rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	callback_chcolor(chcolor.active)
 	callback_burden(burden.active)
 
@@ -352,7 +352,7 @@ control_click.on_click(callback_click)
 
 #window=100000
 chop=False
-gene_plotter.linkedFeatures="Linked_features.bed.gz"
+gene_plotter.linkedFeatures=linkedFeatures # "Linked_features.bed.gz"
 
 p2=draw_genes(gc, window, width=1500, chop=chop)
 p2.x_range=p1.x_range
