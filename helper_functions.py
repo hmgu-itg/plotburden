@@ -270,7 +270,7 @@ def read_sc_results_file(fn, gene,pheno, condition_string):
 	task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
 	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
-	return(results.O_minp.iloc[0])
+	return(results.O_pval.iloc[0])
 
 def read_meta_results_file(fn, gene,pheno, condition_string):
 	info(gene)
@@ -285,7 +285,7 @@ def read_meta_results_file(fn, gene,pheno, condition_string):
 		results.rename(columns={'protein': 'pheno'}, inplace=True)
 	results.columns=results.columns.str.replace('.', '_')
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
-	return(results.O_minp.iloc[0])
+	return(results.O_pval.iloc[0])
 
 def read_burden_ps(co_names, smmat_out_file, ensid, pheno, condition_string):
 	co_names=co_names.split(",")
