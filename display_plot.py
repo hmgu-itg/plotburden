@@ -379,6 +379,7 @@ for n in co_split:
 		col_signals_table.append(TableColumn(field="StdErrmeta", title="S.E. (meta)"))
 		col_signals_table.append(TableColumn(field="Allele1meta", title="A1 (meta)"))
 		col_signals_table.append(TableColumn(field="Allele2meta", title="A2 (meta)"))
+		col_signals_table.append(TableColumn(field="Freq1meta", title="A2 (meta)"))
 		col_signals_table.append(TableColumn(field="HetPValmeta", title="het. P"))
 	else:
 		col_signals_table.append(TableColumn(field="p_score"+n, title="P ("+n+")"))
@@ -386,6 +387,7 @@ for n in co_split:
 		col_signals_table.append(TableColumn(field="se"+n, title="S.E. ("+n+")"))
 		col_signals_table.append(TableColumn(field="allele1"+n, title="A1 ("+n+")"))
 		col_signals_table.append(TableColumn(field="allele0"+n, title="A2 ("+n+")"))
+		col_signals_table.append(TableColumn(field="af"+n, title="AF ("+n+")"))
 	k=k+1
 
 signals_table=DataTable(source=metasegsource, columns=col_signals_table, width=1900)
