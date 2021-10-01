@@ -374,7 +374,7 @@ TableColumn(field="weight", title="weight")
 k=0
 for n in co_split:
 	if(n=="meta"):
-		col_signals_table.append(TableColumn(field="P-Valuemeta", title="P (meta)"))
+		col_signals_table.append(TableColumn(field="P-valuemeta", title="P (meta)"))
 		col_signals_table.append(TableColumn(field="Effectmeta", title="effect (meta)"))
 		col_signals_table.append(TableColumn(field="StdErrmeta", title="S.E. (meta)"))
 		col_signals_table.append(TableColumn(field="Allele1meta", title="A1 (meta)"))
