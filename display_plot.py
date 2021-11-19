@@ -16,7 +16,7 @@ import random
 #Personal libraries
 import helper_functions
 from helper_functions import *
-from callbacks import *
+import callbacks as cb
 from gene_plotter import *
 from numpy import log10, append, nan
 
@@ -94,7 +94,7 @@ resp=resp[resp.pheno!="none"]
 resp['alpha']=0
 resp['y']=None
 ray_source=ColumnDataSource(data=dict(ps=resp.ps, alpha=resp.alpha, y=resp.y, pheno=resp.pheno))
-displayhits = CustomJS(args=dict(source=ray_source), code=displayhits_code)
+displayhits = CustomJS(args=dict(source=ray_source), code=cb.displayhits_code)
 p1.segment(x0='ps', x1='ps', y0=p1.y_range.start, color="firebrick", y1=p1.y_range.end, alpha='alpha', source=ray_source)
 traits=LabelSet(x='ps', y=p1.y_range.end, y_offset=-0.5, text='pheno', level='glyph', text_alpha='alpha', angle=90, angle_units='deg', text_font_size='10pt', text_align='right', text_font_style='italic', source=ray_source)
 p1.add_layout(traits)
@@ -130,14 +130,14 @@ p1.bezier(x0='x0', y0='y0', x1='x1', y1='y1', cx0='cx0', cy0='cy0', cx1='cx1', c
 
 
 ## Destined to die: JS callbacks
-showhide_sp=CustomJS(args=dict(source=source), code=showhide_sp_code)
-changecolor=CustomJS(args=dict(source=source), code=changecolor_code)
-hideburden=CustomJS(args=dict(source=segsource), code=hideburden_code)
-ld_hover = CustomJS(args=dict(lds=ld_source, rawdat=source), code=ld_hover_code)
+showhide_sp=CustomJS(args=dict(source=source), code=cb.showhide_sp_code)
+changecolor=CustomJS(args=dict(source=source), code=cb.changecolor_code)
+hideburden=CustomJS(args=dict(source=segsource), code=cb.hideburden_code)
+ld_hover = CustomJS(args=dict(lds=ld_source, rawdat=source), code=cb.ld_hover_code)
 signalling=ColumnDataSource(data=dict(way=[0]))
-ldbz_hover = CustomJS(args=dict(lds=ld_source, rawdat=source, bezier=bzier, signalling=signalling), code=ldbz_hover_code)
-changehover = CustomJS(args=dict(signalling=signalling, rawdat=source, bezier=bzier), code=changehover_code)
-testhover=CustomJS(args=dict(source=source), code=hover_test_code)
+ldbz_hover = CustomJS(args=dict(lds=ld_source, rawdat=source, bezier=bzier, signalling=signalling), code=cb.ldbz_hover_code)
+changehover = CustomJS(args=dict(signalling=signalling, rawdat=source, bezier=bzier), code=cb.changehover_code)
+testhover=CustomJS(args=dict(source=source), code=cb.hover_test_code)
 
 p1.add_tools(HoverTool(callback=ldbz_hover, tooltips=[("SNPid", "@snpid"), ("RSid", "@rs"), ("p-value", "@p_value"), ("MAF", "@maf"), ("consequence", "@csq")], renderers=[mainplot_points]))
 
