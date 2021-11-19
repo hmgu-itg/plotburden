@@ -1,28 +1,20 @@
+import os
 import sys
-import subprocess
-import pandas as pd
-from pandas import notnull, isnull
-import numpy as np
-import numpy as np
-import re
-import json, requests, asr
-import urllib.request
-import urllib.parse
-import sys
-import csv
-import seaborn as sns
-import random
+import pickle
 
-#Personal libraries
+import numpy as np
+from numpy import log10
+import pandas as pd
+from pandas import notnull
+
+
 import helper_functions
 from helper_functions import *
 import callbacks as cb
-from gene_plotter import *
-from numpy import log10, append, nan
-
-
-import pickle
 import gene_plotter
+from gene_plotter import *
+
+
 helper_functions.contdir=os.path.dirname(__file__)
 # global variables
 server = "https://rest.ensembl.org";
@@ -68,10 +60,10 @@ ensid=gc.gene_id
 
 
 info("Loading Bokeh...")
-from bokeh.plotting import figure, output_file, show, save, curdoc
-from bokeh.layouts import layout, widgetbox, row, column
-from bokeh.models.widgets import Button, RadioButtonGroup, Div
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool, Axis, SaveTool
+from bokeh.plotting import figure, curdoc
+from bokeh.layouts import layout, row, column
+from bokeh.models.widgets import RadioButtonGroup, Div
+from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool
 
 ### Initialising the burden p-value and corresponding segment
 gc2=get_coordinates(gene)
