@@ -39,8 +39,6 @@ changecolor_code="""
     """
 
 changecohort_code="""
-    console.log(names.data)
-    console.log(names.data.toString())
     var co_names=names.data.split(',')
     var source=mainsource.data
 
@@ -72,7 +70,6 @@ ld_hover_code="""
 var lddata = lds.data;
 var rdat = rawdat.data;
 var c=["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43"," #d53e4f"];
-    console.log(cb_data.index)
 
 var indices = cb_data.index.indices;
 if(indices.length>0){
@@ -178,7 +175,6 @@ if (sgl['way'][0] == 0) {
     var lddata = lds.data;
     var rdat = rawdat.data;
     var c = ["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43", " #d53e4f"];
-    console.log(cb_data.index)
     var indices = cb_data.index.indices;
     if (indices.length > 0) {
         // this bit of code was higher, but was causing a reinit at every mouse move.
@@ -277,7 +273,6 @@ if (sgl['way'][0] == 0) {
     var rdat = rawdat.data;
     var bzdata = bezier.data;
     var c = ["#3288bd", "#66c2a5", "#abdda4", "#e6f598", "#ffffbf", "#fee08b", "#fdae61", "#f46d43", " #d53e4f"];
-        console.log(cb_data.index)
 
     var indices = cb_data.index.indices;
     if (indices.length > 0) {
@@ -408,9 +403,9 @@ if(cb_obj.active==0){
 }else if (cb_obj.active==1){
     // used to be highlight, is now fountain. Destroy highlight.
         var rdat = rawdat.data;
-    for (i = 0; i < rdat['ps'].length; i++) {
-            rdat['outalpha'][i] = 0
-            rdat['outcol'][i] = "#3288bd"
+    for (var i = 0; i < rdat['ps'].length; i++) {
+        rdat['outalpha'][i] = 0
+        rdat['outcol'][i] = "#3288bd"
     }
     rawdat.change.emit()
 }
