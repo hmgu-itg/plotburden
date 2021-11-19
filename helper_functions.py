@@ -1,13 +1,20 @@
-import json, requests, asr, subprocess, sys, requests, re
-import urllib.request
+
+import os
+import re
+import sys
+import json
+import subprocess
 import urllib.parse
-import pandas as pd
-import numpy as np
-from pandas import notnull, isnull
-from numpy import log10, append, nan
-from numpy import frompyfunc
+import urllib.request
+
 import mpmath
 from mpmath import mpf
+import numpy as np
+import pandas as pd
+import requests
+from bokeh.palettes import PuOr8 as palette
+from bokeh.palettes import Viridis8 as palWeight
+
 
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
@@ -17,18 +24,18 @@ pd.set_option('display.width', 1000)
 ENSEMBL_USELESSNESS_COEFFICIENT=3
 
 def info (*strs):
-	outstr="[INFO]";
+	outstr="[INFO]"
 	for string in strs:
 		outstr+=" "+str(string)
-	print(outstr);
-	return;
+	print(outstr)
+	return
 
 def warn (*strs):
-	outstr="[WARNING]";
+	outstr="[WARNING]"
 	for string in strs:
 		outstr+=" "+str(string)
-	print(outstr, file=sys.stderr);
-	return;
+	print(outstr, file=sys.stderr)
+	return
 
 class GeneCoordinates:
 	chrom=0
@@ -204,7 +211,7 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 	if len(spfiles)!=len(co_names):
 		sys.exit("cohort and single-point information not coherent (both must be comma-separated)")
 	i=0
-	import os.path
+
 	retdf=pd.DataFrame()
 	for file in spfiles:
 		if not os.path.isfile(file):
@@ -348,8 +355,7 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 
 	info("Calculating LD...")
 	info("getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
-	import os
-	import subprocess
+
 	task = subprocess.Popen([contdir+"/getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 	print(task.stderr)
 	ld=pd.read_table(task.stdout, sep='\s+');
@@ -368,8 +374,6 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 	rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
-	from bokeh.palettes import PuOr8 as palette
-	from bokeh.palettes import Viridis8 as palWeight
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
 	palWeight=[x for x in palWeight]
 	palWeight.append("#939393")
@@ -384,8 +388,6 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 
 
 def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_set_file, pheno, condition_string, coname, megasp, variants):
-	from pandas import notnull, isnull
-	from numpy import log10, append, nan
 	global contdir
 	c=gc.chrom
 	start = gc.start
@@ -410,8 +412,6 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	## Calculate LD
 	info("Calculating LD...")
 	info("getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
-	import os
-	import subprocess
 	task = subprocess.Popen([contdir+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 	ld=pd.read_table(task.stdout, sep='\s+');
 	os.remove("plink.log")
@@ -432,8 +432,6 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
-	from bokeh.palettes import PuOr8 as palette
-	from bokeh.palettes import Viridis8 as palWeight
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
 	palWeight=[x for x in palWeight]
 	palWeight.append("#939393")
