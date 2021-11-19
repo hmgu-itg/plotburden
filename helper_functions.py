@@ -375,12 +375,12 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
-	palWeight=[x for x in palWeight]
-	palWeight.append("#939393")
+	palWeight2=[x for x in palWeight]
+	palWeight2.append("#939393")
 	rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.Freq1meta]
 	rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
 	rawdat['color']="#1F77B4"
-	rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+	rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
 	rawdat['outcolor']="#3288bd"
 	rawdat["outalpha"]=0
 	return(rawdat, ld)
@@ -433,12 +433,12 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
-	palWeight=[x for x in palWeight]
-	palWeight.append("#939393")
+	palWeight2=[x for x in palWeight]
+	palWeight2.append("#939393")
 	rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.af]
 	rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
 	rawdat['color']="#1F77B4"
-	rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+	rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
 	rawdat['outcolor']="#3288bd"
 	rawdat["outalpha"]=0
 	return(rawdat, ld)
