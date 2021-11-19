@@ -3,22 +3,23 @@ import sys
 import pickle
 
 import numpy as np
-from numpy import log10
 import pandas as pd
-from pandas import notnull
-
+from bokeh.models import (FixedTicker, FuncTickFormatter, TableColumn, DataTable,
+						  ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL,
+						  TapTool)
+from bokeh.models.widgets import RadioButtonGroup, Div
+from bokeh.layouts import layout, row, column
+from bokeh.plotting import figure, curdoc
 
 import helper_functions
-from helper_functions import *
 import callbacks as cb
 import gene_plotter
-from gene_plotter import *
 
 
 helper_functions.contdir=os.path.dirname(__file__)
 # global variables
-server = "https://rest.ensembl.org";
-helper_functions.server=server;
+server = "https://rest.ensembl.org"
+helper_functions.server=server
 
 
 plotdatfile=sys.argv[1]
@@ -49,7 +50,6 @@ cohort_color=bigdf[["cocolor", "cohort"]]
 cohort_color.drop_duplicates(inplace=True)
 cohort_color=cohort_color.set_index('cohort').to_dict()
 cohort_color=cohort_color['cocolor']
-print(cohort_color)
 
 c=gc.chrom
 start = gc.start
@@ -59,16 +59,12 @@ gene_end=gc.gend
 ensid=gc.gene_id
 
 
-info("Loading Bokeh...")
-from bokeh.plotting import figure, curdoc
-from bokeh.layouts import layout, row, column
-from bokeh.models.widgets import RadioButtonGroup, Div
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, LabelSet, OpenURL, TapTool
+helper_functions.info("Loading Bokeh...")
 
 ### Initialising the burden p-value and corresponding segment
-gc2=get_coordinates(gene)
+gc2 = helper_functions.get_coordinates(gene)
 burden_p = results[co_split[0]]
-logburdenp = -1*log10(burden_p)
+logburdenp = -1 * np.log10(burden_p)
 if (max(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps'])-min(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps']) < 500):
 	eseg=gc2.end
 	sseg=gc2.start
@@ -81,7 +77,7 @@ segsource=ColumnDataSource(data=dict(y0=[logburdenp], y1=[logburdenp], x0=[sseg]
 p1=figure(x_range=[start, end], tools="box_zoom,lasso_select,tap,xwheel_zoom,reset,save", y_range=[-0.5, maxlogp+0.5], width=1500)
 
 ## Previous signals use the resp dataframe. Putting this code here ensures they are behind everything
-resp=resp[notnull(resp.pheno)]
+resp=resp[pd.notnull(resp.pheno)]
 resp=resp[resp.pheno!="none"]
 resp['alpha']=0
 resp['y']=None
@@ -181,7 +177,7 @@ def callback_changesource(arg):
 		eseg=max(rawdats[arg].loc[rawdats[arg].weight.notnull(), 'ps'])
 		sseg=min(rawdats[arg].loc[rawdats[arg].weight.notnull(), 'ps'])
 	burden_p = results[co_split[arg]]
-	logburdenp = -1*log10(burden_p)
+	logburdenp = -1 * np.log10(burden_p)
 	segsource.data=dict(y0=[logburdenp], y1=[logburdenp], x0=[sseg], x1=[eseg], alpha=[1], color=["firebrick"])
 	## This changes LD
 	ld=lddat[control_source.active]
@@ -349,7 +345,7 @@ control_click.on_click(callback_click)
 chop=False
 gene_plotter.linkedFeatures=linkedFeatures # "Linked_features.bed.gz"
 
-p2=draw_genes(gc, window, width=1500, chop=chop)
+p2 = gene_plotter.draw_genes(gc, window, width=1500, chop=chop)
 p2.x_range=p1.x_range
 p2.xaxis[0].formatter.use_scientific = False
 p2.xaxis[0].major_label_text_font_size = "13pt"
