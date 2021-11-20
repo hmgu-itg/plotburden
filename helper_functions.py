@@ -1,13 +1,20 @@
-import json, requests, asr, subprocess, sys, requests, re
-import urllib.request
+
+import os
+import re
+import sys
+import json
+import subprocess
 import urllib.parse
-import pandas as pd
-import numpy as np
-from pandas import notnull, isnull
-from numpy import log10, append, nan
-from numpy import frompyfunc
+import urllib.request
+
 import mpmath
 from mpmath import mpf
+import numpy as np
+import pandas as pd
+import requests
+from bokeh.palettes import PuOr8 as palette
+from bokeh.palettes import Viridis8 as palWeight
+
 
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
@@ -17,18 +24,18 @@ pd.set_option('display.width', 1000)
 ENSEMBL_USELESSNESS_COEFFICIENT=3
 
 def info (*strs):
-	outstr="[INFO]";
+	outstr="[INFO]"
 	for string in strs:
 		outstr+=" "+str(string)
-	print(outstr);
-	return;
+	print(outstr)
+	return
 
 def warn (*strs):
-	outstr="[WARNING]";
+	outstr="[WARNING]"
 	for string in strs:
 		outstr+=" "+str(string)
-	print(outstr, file=sys.stderr);
-	return;
+	print(outstr, file=sys.stderr)
+	return
 
 class GeneCoordinates:
 	chrom=0
@@ -204,7 +211,7 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 	if len(spfiles)!=len(co_names):
 		sys.exit("cohort and single-point information not coherent (both must be comma-separated)")
 	i=0
-	import os.path
+
 	retdf=pd.DataFrame()
 	for file in spfiles:
 		if not os.path.isfile(file):
@@ -270,7 +277,7 @@ def read_sc_results_file(fn, gene,pheno, condition_string):
 	task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
 	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
-	return(results.O_minp.iloc[0])
+	return(results.O_pval.iloc[0])
 
 def read_meta_results_file(fn, gene,pheno, condition_string):
 	info(gene)
@@ -285,7 +292,7 @@ def read_meta_results_file(fn, gene,pheno, condition_string):
 		results.rename(columns={'protein': 'pheno'}, inplace=True)
 	results.columns=results.columns.str.replace('.', '_')
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
-	return(results.O_minp.iloc[0])
+	return(results.O_pval.iloc[0])
 
 def read_burden_ps(co_names, smmat_out_file, ensid, pheno, condition_string):
 	co_names=co_names.split(",")
@@ -348,8 +355,7 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 
 	info("Calculating LD...")
 	info("getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
-	import os
-	import subprocess
+
 	task = subprocess.Popen([contdir+"/getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 	print(task.stderr)
 	ld=pd.read_table(task.stdout, sep='\s+');
@@ -368,15 +374,13 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 	rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
-	from bokeh.palettes import PuOr8 as palette
-	from bokeh.palettes import Viridis8 as palWeight
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
-	palWeight=[x for x in palWeight]
-	palWeight.append("#939393")
+	palWeight2=[x for x in palWeight]
+	palWeight2.append("#939393")
 	rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.Freq1meta]
 	rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
 	rawdat['color']="#1F77B4"
-	rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+	rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
 	rawdat['outcolor']="#3288bd"
 	rawdat["outalpha"]=0
 	return(rawdat, ld)
@@ -384,8 +388,6 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 
 
 def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_set_file, pheno, condition_string, coname, megasp, variants):
-	from pandas import notnull, isnull
-	from numpy import log10, append, nan
 	global contdir
 	c=gc.chrom
 	start = gc.start
@@ -410,8 +412,6 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	## Calculate LD
 	info("Calculating LD...")
 	info("getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
-	import os
-	import subprocess
 	task = subprocess.Popen([contdir+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
 	ld=pd.read_table(task.stdout, sep='\s+');
 	os.remove("plink.log")
@@ -432,15 +432,13 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
 	rawdat['alpha_prevsig']=0
 	rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
-	from bokeh.palettes import PuOr8 as palette
-	from bokeh.palettes import Viridis8 as palWeight
 	# Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
-	palWeight=[x for x in palWeight]
-	palWeight.append("#939393")
+	palWeight2=[x for x in palWeight]
+	palWeight2.append("#939393")
 	rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.af]
 	rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
 	rawdat['color']="#1F77B4"
-	rawdat['weightcolor']=[palWeight[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+	rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
 	rawdat['outcolor']="#3288bd"
 	rawdat["outalpha"]=0
 	return(rawdat, ld)

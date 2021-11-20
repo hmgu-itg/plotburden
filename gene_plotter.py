@@ -1,11 +1,14 @@
-import pandas as pd
-import numpy as np
-import requests, sys
+#!/usr/bin/env python3
+import sys
 import json
-from pybedtools import *
-from helper_functions import *
-from bokeh.plotting import *
-from bokeh.models import *
+
+import requests
+import pandas as pd
+from pybedtools import BedTool
+from bokeh.plotting import figure
+from bokeh.models import HoverTool, BoxAnnotation, Label
+
+from helper_functions import info
 
 
 def draw_genes(gc, window, width=900, height=400, chop = "No"):
@@ -245,7 +248,7 @@ def get_genomic_features(gc):
     # Open and read files:
     bedlines = {"GENCODE" : [], "regulatory" : []}
     for line in intersectfeature[intersectfeature.geneID == gc.gene_id]["annot"]:
-        content = line.strip()
+        # content = line.strip()
 
         # Extract json string and load data:
         jsonData = json.loads(line)
