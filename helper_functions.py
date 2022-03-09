@@ -53,9 +53,9 @@ class GeneCoordinates:
 		self.gend = end
 
 	def extend(self, margin):
-		self.start-=int(margin);
-		if self.start < 0: self.start = 0;
-		self.end+=int(margin);
+		self.start-=int(margin)
+		if self.start < 0: self.start = 0
+		self.end+=int(margin)
 
 
 def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
@@ -127,14 +127,14 @@ def get_rsid_in_region(gc):
 	c=gc.chrom
 	start=gc.start
 	end=gc.end
-	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;';
+	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
 	info("\t\t\t🌐   Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
 	snps=pd.DataFrame(jData)
 	snps['location']=snps.seq_region_name.map(str)+":"+snps.start.map(str)+"-"+snps.end.map(str)
 
-	url = server+'/phenotype/region/homo_sapiens/'+str(c)+":"+str(start)+"-"+str(end)+'?feature_type=Variation;content-type=application/json;';
+	url = server+'/phenotype/region/homo_sapiens/'+str(c)+":"+str(start)+"-"+str(end)+'?feature_type=Variation;content-type=application/json;'
 	info("\t\t\t🌐   Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
@@ -145,7 +145,7 @@ def get_rsid_in_region(gc):
 	for index, variant in pheno.iterrows():
 		for assoc in variant.phenotype_associations:
 			if assoc['source'] != 'COSMIC':
-				variant.pheno=assoc['description'] if (variant.pheno=="") else variant.pheno+";"+assoc['description'];
+				variant.pheno=assoc['description'] if (variant.pheno=="") else variant.pheno+";"+assoc['description']
 				variant.location=assoc['location']
 	resp=pd.merge(snps, pheno, on='location', how='outer')
 	resp.drop(["alleles", "assembly_name", "clinical_significance", "feature_type", "end", "seq_region_name", "phenotype_associations", "strand", "source", "id_y", "location"], axis=1, inplace=True)
@@ -157,14 +157,14 @@ def get_rsid_in_region_old(gc):
 	c=gc.chrom
 	start=gc.start
 	end=gc.end
-	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;';
+	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
 	info("Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
 	cat=pd.DataFrame(jData)
 	nsplit=ENSEMBL_USELESSNESS_COEFFICIENT*int(cat.count()[0]/1000)
 	resp=pd.DataFrame(columns=('rs', 'ps', 'consequence', 'pheno'))
-	info("\t\t\t🌐   Performing "+str(nsplit)+" phenotype requests...");
+	info("\t\t\t🌐   Performing "+str(nsplit)+" phenotype requests...")
 	ext = "/variation/homo_sapiens?phenotypes=1"
 	j=0
 	for i in np.array_split(cat['id'], nsplit):
@@ -186,7 +186,7 @@ def get_rsid_in_region_old(gc):
 				consequence=jData[rsid]['most_severe_consequence']
 				pheno=""
 				for k in jData[rsid]['phenotypes']:
-					pheno=k['trait'] if (pheno=="") else pheno+";"+k['trait'];
+					pheno=k['trait'] if (pheno=="") else pheno+";"+k['trait']
 				resp=resp.append({'rs':rsid, 'ps':int(ps), 'consequence':consequence, 'pheno':pheno}, ignore_index=True)
 	return(resp)
 
@@ -194,11 +194,11 @@ def fetch_single_point(gc, sp_results):
 	c=gc.chrom
 	start=gc.start
 	end=gc.end
-	sp = pd.DataFrame();
-	task = subprocess.Popen(["tabix", "-h", sp_results, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE);
-	sp=pd.read_table(task.stdout);
-	task = subprocess.Popen(["zgrep", "-m1", "chr", sp_results], stdout=subprocess.PIPE);
-	sp.columns=task.stdout.read().decode('UTF-8').split();
+	sp = pd.DataFrame()
+	task = subprocess.Popen(["tabix", "-h", sp_results, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE)
+	sp=pd.read_table(task.stdout)
+	task = subprocess.Popen(["zgrep", "-m1", "chr", sp_results], stdout=subprocess.PIPE)
+	sp.columns=task.stdout.read().decode('UTF-8').split()
 	return(sp)
 
 def fetch_single_point_meta(gc, sp_results, co_names):
@@ -216,28 +216,28 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 	for file in spfiles:
 		if not os.path.isfile(file):
 			sys.exit("Single-point file "+file+" is not reachable.")
-		sp = pd.DataFrame();
+		sp = pd.DataFrame()
 		# def logmp(x):
 		# 	return np.float(log10(mpf(x)))
 		# getlogp = frompyfunc(logmp, 1, 1)
 		try:
-			task = subprocess.Popen(["zgrep", "-m1", "", file], stdout=subprocess.PIPE);
-			cols = task.stdout.read().decode('UTF-8').replace('#', '').split();
+			task = subprocess.Popen(["zgrep", "-m1", "", file], stdout=subprocess.PIPE)
+			cols = task.stdout.read().decode('UTF-8').replace('#', '').split()
 			print(co_names[i])
 			print(file)
-			task = subprocess.Popen(["tabix", file, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE);
+			task = subprocess.Popen(["tabix", file, str(c)+":"+str(start)+"-"+str(end)], stdout=subprocess.PIPE)
 			print(cols)
 			if cols[0]=="Chr":
 				# GCTA input: convert
 				cols=("chr", "rs", "ps", "allele1", "allele0", "af", "beta", "se", "p_score")
 			if(co_names[i]=="meta"):
-				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"P-value":np.unicode_});
+				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"P-value":np.unicode_})
 				print(sp.head())
 				sp=sp[sp.notnull()['Effect']]
 				sp["logp"]=[-1*np.float64(mpmath.log10(mpf(x))) for x in sp["P-value"]]
 				sp=sp.astype({"logp" : "float64"})
 			else:
-				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"p_score":np.unicode_});
+				sp=pd.read_table(task.stdout, header=0, names=cols, dtype={"p_score":np.unicode_})
 				print(sp.head())
 				sp["logp"]=[-1*np.float64(mpmath.log10(mpf(x))) for x in sp["p_score"]]
 				sp=sp.astype({"logp" : "float64"})
@@ -269,24 +269,24 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 
 def read_large_results_file(fn, gene,protein, condition_string):
 	task=subprocess.Popen(["bzgrep", "-w", gene+"."+condition_string, fn], stdout=subprocess.PIPE)
-	results=pd.read_table(task.stdout, header=None, names=["protein","group","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+	results=pd.read_table(task.stdout, header=None, names=["protein","group","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"])
 	return(results[results.protein==protein])
 
 def read_sc_results_file(fn, gene,pheno, condition_string):
 	info("searching for burden:", pheno, "/", gene, "in", fn)
 	task=subprocess.Popen(["zgrep", "-w", "^"+gene, fn], stdout=subprocess.PIPE)
-	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"]);
+	results=pd.read_table(task.stdout, header=None, names=["gene","pheno","condition","symbol","n_variants","miss_min","miss_mean","miss_max","freq_min","freq_mean","freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp","O_minp.rho","E_pval"])
 	results=results[(results.pheno==pheno) & (results.condition ==condition_string)]
 	return(results.O_pval.iloc[0])
 
 def read_meta_results_file(fn, gene,pheno, condition_string):
 	info(gene)
 	info(fn)
-	task = subprocess.Popen(["zgrep", "-m1", "", fn], stdout=subprocess.PIPE);
-	cols = task.stdout.read().decode('UTF-8').replace('#', '').split();
+	task = subprocess.Popen(["zgrep", "-m1", "", fn], stdout=subprocess.PIPE)
+	cols = task.stdout.read().decode('UTF-8').replace('#', '').split()
 	task=subprocess.Popen(["zgrep", "-w", gene, fn], stdout=subprocess.PIPE)
 	info("Searching for "+gene+" in", fn)
-	results=pd.read_table(task.stdout, header=None, names=cols);
+	results=pd.read_table(task.stdout, header=None, names=cols)
 	info("obtained", str(len(results.index)), "records")
 	if "pheno" not in results.columns:
 		results.rename(columns={'protein': 'pheno'}, inplace=True)
@@ -356,9 +356,9 @@ def produce_meta_df(gc, sp, variants, vcf_files, co_names):
 	info("Calculating LD...")
 	info("getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
 
-	task = subprocess.Popen([contdir+"/getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
+	task = subprocess.Popen([contdir+"/getld_meta.sh", co_names, vcf_files, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE)
 	print(task.stderr)
-	ld=pd.read_table(task.stdout, sep='\s+');
+	ld=pd.read_table(task.stdout, sep='\s+')
 	info("Computed LD between ", str(len(ld.index)), " variant pairs.")
 
 	## Defining plot-specific data
@@ -412,8 +412,8 @@ def produce_single_cohort_df(gc, sp_results, resp, vcf, smmat_out_file, smmat_se
 	## Calculate LD
 	info("Calculating LD...")
 	info("getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start))
-	task = subprocess.Popen([contdir+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE);
-	ld=pd.read_table(task.stdout, sep='\s+');
+	task = subprocess.Popen([contdir+"/getld.sh", vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(sp.size), str(end-start)], stdout=subprocess.PIPE)
+	ld=pd.read_table(task.stdout, sep='\s+')
 	os.remove("plink.log")
 	os.remove("plink.nosex")
 
