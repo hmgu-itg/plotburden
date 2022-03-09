@@ -16,6 +16,10 @@ from bokeh.palettes import PuOr8 as palette
 from bokeh.palettes import Viridis8 as palWeight
 
 
+
+SERVER = "https://rest.ensembl.org"
+
+
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
@@ -59,7 +63,6 @@ class GeneCoordinates:
 
 
 def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
-	global server
 	e.loc[(e['ensembl_rs']=="novel") & (e[a1col]==e[a2col]),'ensembl_consequence']='double allele'
 	novelsnps=e.loc[(e['ensembl_rs']=="novel") & (e['ensembl_consequence']!='double allele'),]
 	info("Sending query for "+str(len(novelsnps.index))+" novel SNPs.")
@@ -73,8 +76,8 @@ def get_csq_novel_variants(e, chrcol, pscol, a1col, a2col):
 		request='{ "variants" : ["'+'", "'.join(novelsnps['query'][i:i+n])+'" ] }'
 		ext = "/vep/homo_sapiens/region"
 		headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
-		info("\t\t\t🌐   Querying Ensembl VEP (POST) :"+server+ext)
-		r = requests.post(server+ext, headers=headers, data=request)
+		info("\t\t\t🌐   Querying Ensembl VEP (POST) :"+SERVER+ext)
+		r = requests.post(SERVER+ext, headers=headers, data=request)
 		if not r.ok:
 			print("headers :"+request)
 			r.raise_for_status()
@@ -108,11 +111,9 @@ def get_coordinates(gene_name):
 	Function to return the genomic coordinates of a gene submitted
 	output data: chromosome, start, end, stable ID
 	'''
-
-	global server
 	ext = "/lookup/symbol/homo_sapiens/%s?expand=0" % (gene_name)
 
-	r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
+	r = requests.get(SERVER+ext, headers={ "Content-Type" : "application/json"})
 
 	if not r.ok:
 	  r.raise_for_status()
@@ -127,14 +128,14 @@ def get_rsid_in_region(gc):
 	c=gc.chrom
 	start=gc.start
 	end=gc.end
-	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
+	url = SERVER+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
 	info("\t\t\t🌐   Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
 	snps=pd.DataFrame(jData)
 	snps['location']=snps.seq_region_name.map(str)+":"+snps.start.map(str)+"-"+snps.end.map(str)
 
-	url = server+'/phenotype/region/homo_sapiens/'+str(c)+":"+str(start)+"-"+str(end)+'?feature_type=Variation;content-type=application/json;'
+	url = SERVER+'/phenotype/region/homo_sapiens/'+str(c)+":"+str(start)+"-"+str(end)+'?feature_type=Variation;content-type=application/json;'
 	info("\t\t\t🌐   Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
@@ -157,7 +158,7 @@ def get_rsid_in_region_old(gc):
 	c=gc.chrom
 	start=gc.start
 	end=gc.end
-	url = server+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
+	url = SERVER+'/overlap/region/human/'+str(c)+":"+str(start)+"-"+str(end)+'?feature=variation;content-type=application/json;'
 	info("Querying Ensembl with region "+url)
 	response = urllib.request.urlopen(url).read().decode('utf-8')
 	jData = json.loads(response)
@@ -169,14 +170,14 @@ def get_rsid_in_region_old(gc):
 	j=0
 	for i in np.array_split(cat['id'], nsplit):
 		j=j+1
-		info("\t\t\t⌛   GWASCAT (POST) at "+server+ext+" ("+str(j)+'/'+str(nsplit)+")")
+		info("\t\t\t⌛   GWASCAT (POST) at "+SERVER+ext+" ("+str(j)+'/'+str(nsplit)+")")
 		header=pd.DataFrame()
 		header['ids']=i
 		data = header.to_dict(orient="list")
 		headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
 		data=json.dumps(data)
 		data = data.encode('ascii')
-		req = urllib.request.Request(server+ext, data=data, headers=headers)
+		req = urllib.request.Request(SERVER+ext, data=data, headers=headers)
 		with urllib.request.urlopen(req) as response:
 			r=response.read().decode('utf-8')
 			jData = json.loads(r)

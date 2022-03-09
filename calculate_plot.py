@@ -36,20 +36,17 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     '''
     Prepares data for plotting
     '''
-    return
+    cohort_data = list(zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf))
 
-    smmat_set_file=sys.argv[4]
-    smmat_out_file=sys.argv[5]
-    co_names=sys.argv[6]
-    sp_results=sys.argv[7]
-    vcf=sys.argv[8]
+    # smmat_set_file=sys.argv[4]
+    # smmat_out_file=sys.argv[5]
+    # co_names=sys.argv[6]
+    # sp_results=sys.argv[7]
+    # vcf=sys.argv[8]
 
 
     gene_plotter.linkedFeatures=linkedFeatures
     helper_functions.contdir=os.path.dirname(__file__)
-    # global variables
-    server = "https://rest.ensembl.org"
-    helper_functions.server=server
 
     # Getting Gene coordinates and extend the coordinates with the specified window:
     info("Querying Ensembl for coordinates of "+gene+"...")
