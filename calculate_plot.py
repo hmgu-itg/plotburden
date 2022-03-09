@@ -3,6 +3,7 @@
 import os
 import sys
 import random
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -55,7 +56,7 @@ info("\t\t⇰ Plot boundaries: "+ str(c)+":"+str(start)+"-"+str(end))
 ## Getting variant consequences for all variants in the region
 info("Querying Ensembl for SNP consequences and phenotype associations.")
 resp = helper_functions.get_rsid_in_region(gc)
-#resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC);
+#resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC)
 #resp=pd.read_table("snp.data", sep=",")
 resp['pheno'].replace(to_replace="Annotated by HGMD*", value="", inplace=True, regex=True)
 resp['pheno'].replace(to_replace="ClinVar.*not specified", value="", inplace=True, regex=True)
@@ -72,7 +73,7 @@ info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!=
 ## Get the single point results. Returns one merged (outer) dataframe with all columns suffixed by the cohort name
 ## We are just going to use this for annotation purposes
 sp = helper_functions.fetch_single_point_meta(gc, sp_results, co_names)
-info("Read", len(sp), "lines from single-point analysis.");
+info("Read", len(sp), "lines from single-point analysis.")
 sp=pd.merge(sp, resp, on='ps', how='outer')
 sp.loc[pd.isnull(sp.ensembl_rs), 'ensembl_rs']="novel"
 sp.loc[pd.isnull(sp.consequence), 'consequence']="novel"
@@ -237,7 +238,7 @@ rawdat=rawdats[0]
 if -np.log10(min(results.values()))>maxlogp:
 	maxlogp=-np.log10(min(results.values()))
 
-import pickle
+
 plotdat=dict(rawdats=rawdats, rawdat=rawdat, maxlogp=maxlogp, gene=gene, gc=gc, resp=resp, lddat=lddat, sp=sp, cohdat=cohdat, co_split=co_split, results=results, bigdf=bigdf, window=window, chop=chop, pheno=pheno, condition_string=condition_string, linkedFeatures=linkedFeatures)
 with open(output+'.plotdat.bin', 'wb') as config_dictionary_file:
 	pickle.dump(plotdat, config_dictionary_file)
