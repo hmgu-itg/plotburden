@@ -42,11 +42,6 @@ def warn (*strs):
 	return
 
 class GeneCoordinates:
-	chrom=0
-	start=0
-	end=0
-	gene_id=""
-	name=""
 	def __init__(self, chrom, start, end, gene_id, name):
 		self.chrom = chrom
 		self.start = start
