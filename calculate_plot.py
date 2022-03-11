@@ -49,26 +49,25 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     helper_functions.contdir=os.path.dirname(__file__)
 
     # Getting Gene coordinates and extend the coordinates with the specified window:
-    info("Querying Ensembl for coordinates of "+gene+"...")
+    info(f"Querying Ensembl for coordinates of {gene}...")
     gc = helper_functions.get_coordinates(gene)
     gc.extend(int(window))
 
     #Extract coordinates:
 
-    c=gc.chrom
+    c = gc.chrom
     start = gc.start
     end = gc.end
-    gene_start=gc.gstart
-    gene_end=gc.gend
     ensid=gc.gene_id
 
     # Report coordinates:
-    info("\t\t⇰ Ensembl provided the coordinates "+str(c)+":"+str(gene_start)+"-"+str(gene_end)+" for gene "+gene)
-    info("\t\t⇰ Plot boundaries: "+ str(c)+":"+str(start)+"-"+str(end))
+    info(f"    ⇰ Ensembl provided the coordinates chr{c}:{start}-{end} for gene {gene}")
+    info(f"    ⇰ Plot boundaries: chr{c}:{start}-{end}")
 
     ## Getting variant consequences for all variants in the region
     info("Querying Ensembl for SNP consequences and phenotype associations.")
     resp = helper_functions.get_rsid_in_region(gc)
+
     #resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC)
     #resp=pd.read_table("snp.data", sep=",")
     resp['pheno'].replace(to_replace="Annotated by HGMD*", value="", inplace=True, regex=True)
@@ -78,8 +77,8 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     resp.loc[resp.pheno=="", 'pheno']="none"
     resp['ensembl_rs']=resp['rs']
     resp.drop('rs', axis=1, inplace=True)
-    info("\t\t⇰ Ensembl provided", len(resp),"known SNPs, ", len(resp[resp.pheno!="none"]), "have associated phenotypes.")
-
+    info(f"    ⇰ Ensembl provided {len(resp)} known SNPs, {len(resp[resp.pheno!='none'])} have associated phenotypes.")
+    return
 
 
 
@@ -101,7 +100,7 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     ## Get the burden p-values
     ## Returns a dictionary indexed by the cohort name or "meta"
     info("Reading burden P-values...")
-    results = helper_functions.read_burden_ps(co_names,smmat_out_file, ensid, pheno, condition_string)
+    results = helper_functions.read_burden_ps(co_names, smmat_out_file, ensid, pheno, condition_string)
     # import pickle
     # with open('results.bin', 'rb') as config_dictionary_file:
     #     results = pickle.load(config_dictionary_file)
