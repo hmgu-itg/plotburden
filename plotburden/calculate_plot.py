@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import shutil
 import random
 import pickle
 
@@ -12,8 +13,10 @@ import seaborn as sns
 
 
 import gene_plotter
-import helper_functions
-from helper_functions import info
+from . import DEPENDENCIES
+import .helper_functions
+from .helper_functions import info
+
 
 
 __version__ = '0.0.1'
@@ -28,14 +31,22 @@ __version__ = '0.0.1'
 @click.option('--cohort-rv', type = click.Path(exists=True, dir_okay=False), required=True, multiple=True, help = 'Single cohort rare variant file')
 @click.option('--cohort-sp', type = click.Path(exists=True, dir_okay=False), required=True, multiple=True, help = 'Single cohort single-point file')
 @click.option('--cohort-vcf', type = click.Path(exists=True, dir_okay=False), required=True, multiple=True, help = 'Single cohort VCF file')
+@click.option('--meta-rv', type = click.Path(exists=True, dir_okay=False), required=False, help = 'Meta-cohort rare-variant association file')
+@click.option('--meta-sp', type = click.Path(exists=True, dir_okay=False), required=False, help = 'Meta-cohort single-point association file')
 @click.option('-o', '--out', 'output', type = click.Path(exists=False, dir_okay=False), required=True, help = 'Output prefix')
 @click.option('-l', '--linked', 'linkedFeatures', type = click.Path(exists=True, dir_okay=False), required=True, help = 'Filepath to LinkedFeatures file')
 @click.option('--chop/--no-chop', default=False, show_default=True, help = 'Whether to chop or not')
 @click.version_option(__version__)
-def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_rv, cohort_sp, cohort_vcf, output, linkedFeatures, chop, **kwargs):
+def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_rv, cohort_sp, cohort_vcf, meta_rv, meta_sp, output, linkedFeatures, chop, **kwargs):
     '''
     Prepares data for plotting
     '''
+
+    exists = {exe for exe in DEPENDENCIES if shutil.which(exe) is not None}
+    missing = DEPENDENCIES.difference(exists)
+    if missing:
+        sys.exit(f"Following dependencies are missing: {', '.join(missing)}")
+
     cohort_data = list(zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf))
 
     # smmat_set_file=sys.argv[4]
