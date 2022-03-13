@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import shlex
 import shutil
 import random
 import pickle
@@ -69,6 +70,29 @@ def combine_sp(gc, cohort_data):
     return retdf
 
 
+def combine_all_sp(gc, cohort_data, meta_sp):
+    '''
+    Parameters
+    ----------
+    gc : GeneCoordinates
+    
+    cohort_data : dict
+        Cohort data
+    meta_sp : str
+        File path to METAL output file
+    '''
+    retdf = combine_sp(gc, cohort_data)
+
+    meta_sp_df = fetch_region_single_point(gc, meta_sp)
+    meta_sp_df = meta_sp_df.add_suffix('_meta')
+
+    retdf = pd.merge(retdf, meta_sp_df, left_on="ps", right_on="Pos_meta", how="outer")
+    retdf['ps'].fillna(retdf["Pos_meta"], inplace=True)
+    retdf['chr'].fillna(retdf["Chrom_meta"], inplace=True)
+    retdf['chr'] = retdf['chr'].astype(int)
+    retdf['ps'] = retdf['ps'].astype(int)
+    return retdf
+
 
 @click.command()
 @click.option('-p', '--pheno', type = click.STRING, required=True, help = 'Phenotype name')
@@ -119,17 +143,20 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     gc = helper_functions.get_coordinates(gene)
     gc.extend(window)
     logger.debug(gc)
+    
+    region = f'chr{gc.chrom}:{gc.start}-{gc.end}'
+    logger.info(f'{gene} gene region: {region}')
 
-    #Extract coordinates:
+    # Extract coordinates:
 
-    c = gc.chrom
-    start = gc.start
-    end = gc.end
+    # c = gc.chrom
+    # start = gc.start
+    # end = gc.end
     ensid=gc.gene_id
 
     # Report coordinates:
-    logger.info(f"    ⇰ Ensembl provided the coordinates chr{c}:{start}-{end} for gene {gene}")
-    logger.info(f"    ⇰ Plot boundaries: chr{c}:{start}-{end}")
+    logger.info(f"    ⇰ Ensembl provided the coordinates {region} for gene {gene}")
+    logger.info(f"    ⇰ Plot boundaries: {region}")
 
     ## Getting variant consequences for all variants in the region
     logger.info("Querying Ensembl for SNP consequences and phenotype associations.")
@@ -146,14 +173,20 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     resp.drop('rs', axis=1, inplace=True)
     logger.debug(resp)
     logger.info(f"    ⇰ Ensembl provided {len(resp)} known SNPs, {len(resp[resp.pheno!='none'])} have associated phenotypes.")
-    return
+    
 
 
 
     ## Get the single point results. Returns one merged (outer) dataframe with all columns suffixed by the cohort name
     ## We are just going to use this for annotation purposes
-    sp = helper_functions.fetch_single_point_meta(gc, sp_results, co_names)
-    info("Read", len(sp), "lines from single-point analysis.")
+    
+    # sp = helper_functions.fetch_single_point_meta(gc, sp_results, co_names)
+    # info("Read", len(sp), "lines from single-point analysis.")
+    sp = combine_all_sp(gc, cohort_data, meta_sp)
+    logger.info(f'Read {sp.shape[0]} lines from all single-point association files')
+    logger.debug(sp)
+    return
+    
     sp=pd.merge(sp, resp, on='ps', how='outer')
     sp.loc[pd.isnull(sp.ensembl_rs), 'ensembl_rs']="novel"
     sp.loc[pd.isnull(sp.consequence), 'consequence']="novel"
