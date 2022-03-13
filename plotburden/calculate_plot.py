@@ -9,6 +9,7 @@ import pickle
 import logging
 import subprocess
 from io import StringIO
+from datetime import datetime
 
 import click
 import numpy as np
@@ -122,7 +123,8 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
         sys.exit(f"Following dependencies are missing: {', '.join(missing)}")
 
     logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
-
+    now = datetime.strftime(datetime.utcnow(), '%Y-%m-%d %H:%M:%S UTC')
+    logger.info('Running calculate-plot on {now}')
     logger.debug('setting up cohort_data')
     cohort_data = {
         name: {
@@ -179,20 +181,18 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
 
     ## Get the single point results. Returns one merged (outer) dataframe with all columns suffixed by the cohort name
     ## We are just going to use this for annotation purposes
-    
-    # sp = helper_functions.fetch_single_point_meta(gc, sp_results, co_names)
-    # info("Read", len(sp), "lines from single-point analysis.")
     sp = combine_all_sp(gc, cohort_data, meta_sp)
     logger.info(f'Read {sp.shape[0]} lines from all single-point association files')
     logger.debug(sp)
-    return
     
-    sp=pd.merge(sp, resp, on='ps', how='outer')
-    sp.loc[pd.isnull(sp.ensembl_rs), 'ensembl_rs']="novel"
-    sp.loc[pd.isnull(sp.consequence), 'consequence']="novel"
-    sp=sp[pd.notnull(sp.chr)]
-    sp['ensembl_consequence']=sp['consequence']
-    sp['chr']=sp['chr'].astype(int)
+    sp2 = sp.merge(resp, on='ps', how='outer')
+    sp2['ensembl_rs'].fillna('novel', inplace=True)
+    sp2['consequence'].fillna('novel', inplace=True)
+    sp2 = sp2[sp2['chr'].notna()]
+    sp2['ensembl_consequence'] = sp2['consequence']
+    sp2['chr'] = sp2['chr'].astype(int)
+
+    return 
     info("Getting consequences for novel variants...")
     sp = helper_functions.get_csq_novel_variants(sp, 'chr', 'ps', 'allele0', 'allele1')
 
