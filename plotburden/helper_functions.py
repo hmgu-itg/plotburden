@@ -51,6 +51,9 @@ class GeneCoordinates:
 		self.gstart = start
 		self.gend = end
 
+	def __repr__(self):
+		return f'GeneCoordinates({self.chrom}, {self.start}, {self.end}, "{self.gene_id}", "{self.name}")'
+
 	def extend(self, margin):
 		self.start-=int(margin)
 		if self.start < 0: self.start = 0
@@ -255,7 +258,6 @@ def fetch_single_point_meta(gc, sp_results, co_names):
 			retdf['allele0']=retdf["allele0"+co_names[i]]
 			retdf['allele1']=retdf["allele1"+co_names[i]]
 		else:
-
 			retdf=pd.merge(retdf, sp, left_on="ps", right_on="ps"+co_names[i], how="outer")
 			## ALSO THIS WOULD WORK df.loc[df['foo'].isnull(),'foo'] = df['bar']
 			retdf.ps.fillna(retdf["ps"+co_names[i]], inplace=True)
