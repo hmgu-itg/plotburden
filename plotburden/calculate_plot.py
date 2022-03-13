@@ -5,21 +5,69 @@ import sys
 import shutil
 import random
 import pickle
+import subprocess
+from io import StringIO
 
 import click
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-
-import gene_plotter
-from . import DEPENDENCIES
-import .helper_functions
+from . import DEPENDENCIES, __version__, gene_plotter, helper_functions
 from .helper_functions import info
+from .logging import make_logger
 
 
+def run(command: str) -> subprocess.CompletedProcess:
+    cmd = shlex.split(command)
+    task = subprocess.run(cmd, stdout=subprocess.PIPE)
+    if task.returncode!=0:
+        raise SystemError(f'"{command}" returned error code {task.returncode}')
+    return task
 
-__version__ = '0.0.1'
+
+def fetch_region_single_point(gc, sp_file) -> pd.DataFrame:
+    task = run(f'zgrep -m1 "" {sp_file}')
+    cols = task.stdout.decode('utf-8').split()
+
+    region = f'{gc.chrom}:{gc.start}-{gc.end}'
+    task = run(f'tabix {sp_file} {region}')
+
+    content = task.stdout.decode('utf-8')
+
+    return pd.read_csv(StringIO(content), sep = '\t', header = None, names = cols)
+
+
+def combine_sp(gc, cohort_data):
+    for name, data in cohort_data.items():
+        sp_df = fetch_region_single_point(gc, data['sp'])
+        if sp_df.columns[0] == 'Chr':
+            # GCTA input: convert
+            sp_df.columns = ("chr", "rs", "ps", "allele1", "allele0", "af", "beta", "se", "p_score")
+        sp_df['logp'] = -np.log10(sp_df['p_score'].to_numpy())
+        sp_df = sp_df.add_suffix('_'+name)
+        data['sp_df'] = sp_df
+
+    retdf = None
+    for name, data in cohort_data.items():
+        sp_df = data['sp_df']
+
+        if retdf is None:
+            retdf = sp_df
+            retdf['chr'] = retdf['chr_'+name]
+            retdf['ps'] = retdf['ps_'+name]
+            retdf['allele0'] = retdf['allele0_'+name]
+            retdf['allele1'] = retdf['allele1_'+name]
+        else:
+            retdf=pd.merge(retdf, sp_df, left_on="ps", right_on="ps_"+name, how="outer")
+            ## ALSO THIS WOULD WORK df.loc[df['foo'].isnull(),'foo'] = df['bar']
+            retdf['ps'].fillna(retdf["ps_"+name], inplace=True)
+            retdf['chr'].fillna(retdf["chr_"+name], inplace=True)
+    retdf['chr'] = retdf['chr'].astype(int)
+    retdf['ps'] = retdf['ps'].astype(int)
+    return retdf
+
+
 
 @click.command()
 @click.option('-p', '--pheno', type = click.STRING, required=True, help = 'Phenotype name')
@@ -47,22 +95,28 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     if missing:
         sys.exit(f"Following dependencies are missing: {', '.join(missing)}")
 
-    cohort_data = list(zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf))
+    logger = make_logger(f'{output}.log')
 
-    # smmat_set_file=sys.argv[4]
-    # smmat_out_file=sys.argv[5]
-    # co_names=sys.argv[6]
-    # sp_results=sys.argv[7]
-    # vcf=sys.argv[8]
+    logger.debug('setting up cohort_data')
+    cohort_data = {
+        name: {
+            'rv': rv,
+            'sp': sp,
+            'vcf': vcf
+        }
+        for name, rv, sp, vcf in zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf)
+    }
+
+    logger.debug(cohort_data)
 
 
     gene_plotter.linkedFeatures=linkedFeatures
     helper_functions.contdir=os.path.dirname(__file__)
 
     # Getting Gene coordinates and extend the coordinates with the specified window:
-    info(f"Querying Ensembl for coordinates of {gene}...")
+    logger.info(f"Querying Ensembl for coordinates of {gene}...")
     gc = helper_functions.get_coordinates(gene)
-    gc.extend(int(window))
+    gc.extend(window)
 
     #Extract coordinates:
 
@@ -76,9 +130,9 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     info(f"    ⇰ Plot boundaries: chr{c}:{start}-{end}")
 
     ## Getting variant consequences for all variants in the region
-    info("Querying Ensembl for SNP consequences and phenotype associations.")
+    logger.info("Querying Ensembl for SNP consequences and phenotype associations.")
     resp = helper_functions.get_rsid_in_region(gc)
-
+    logger.debug(resp)
     #resp.to_csv(gene+".snp.data", index=None, sep=",", quoting=csv.QUOTE_NONNUMERIC)
     #resp=pd.read_table("snp.data", sep=",")
     resp['pheno'].replace(to_replace="Annotated by HGMD*", value="", inplace=True, regex=True)
@@ -88,7 +142,8 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     resp.loc[resp.pheno=="", 'pheno']="none"
     resp['ensembl_rs']=resp['rs']
     resp.drop('rs', axis=1, inplace=True)
-    info(f"    ⇰ Ensembl provided {len(resp)} known SNPs, {len(resp[resp.pheno!='none'])} have associated phenotypes.")
+    logger.debug(resp)
+    logger.info(f"    ⇰ Ensembl provided {len(resp)} known SNPs, {len(resp[resp.pheno!='none'])} have associated phenotypes.")
     return
 
 

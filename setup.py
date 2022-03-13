@@ -19,13 +19,11 @@ setup(
         'seaborn'
     ],
     include_package_data = True,
-    # entry_points = {
-    #     'console_scripts': [
-    #         'peakplotter = peakplotter.main:cli',
-    #         'peakplotter-region = peakplotter.main:cli_region',
-    #         'peakplotter-data-setup = peakplotter._data:setup_data',
-    #     ],
-    # },
+    entry_points = {
+        'console_scripts': [
+            'calculate-plot = plotburden.calculate_plot:cli',
+        ],
+    },
 # Metadata
     author = "Arthur Gilly",
     author_email = "arthur.gilly@helmholtz-muenchen.de",

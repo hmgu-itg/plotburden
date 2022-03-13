@@ -8,7 +8,7 @@ from pybedtools import BedTool
 from bokeh.plotting import figure
 from bokeh.models import HoverTool, BoxAnnotation, Label
 
-from helper_functions import info
+from .helper_functions import info
 
 
 def draw_genes(gc, window, width=900, height=400, chop = "No"):
