@@ -5,6 +5,7 @@ import sys
 import shutil
 import random
 import pickle
+import logging
 import subprocess
 from io import StringIO
 
@@ -84,8 +85,9 @@ def combine_sp(gc, cohort_data):
 @click.option('-o', '--out', 'output', type = click.Path(exists=False, dir_okay=False), required=True, help = 'Output prefix')
 @click.option('-l', '--linked', 'linkedFeatures', type = click.Path(exists=True, dir_okay=False), required=True, help = 'Filepath to LinkedFeatures file')
 @click.option('--chop/--no-chop', default=False, show_default=True, help = 'Whether to chop or not')
+@click.option('--debug', is_flag=True, default=False, help = 'Run in debug mode')
 @click.version_option(__version__)
-def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_rv, cohort_sp, cohort_vcf, meta_rv, meta_sp, output, linkedFeatures, chop, **kwargs):
+def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_rv, cohort_sp, cohort_vcf, meta_rv, meta_sp, output, linkedFeatures, chop, debug, **kwargs):
     '''
     Prepares data for plotting
     '''
@@ -95,7 +97,7 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     if missing:
         sys.exit(f"Following dependencies are missing: {', '.join(missing)}")
 
-    logger = make_logger(f'{output}.log')
+    logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
 
     logger.debug('setting up cohort_data')
     cohort_data = {
@@ -106,7 +108,6 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
         }
         for name, rv, sp, vcf in zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf)
     }
-
     logger.debug(cohort_data)
 
 
@@ -117,6 +118,7 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     logger.info(f"Querying Ensembl for coordinates of {gene}...")
     gc = helper_functions.get_coordinates(gene)
     gc.extend(window)
+    logger.debug(gc)
 
     #Extract coordinates:
 
@@ -126,8 +128,8 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     ensid=gc.gene_id
 
     # Report coordinates:
-    info(f"    ⇰ Ensembl provided the coordinates chr{c}:{start}-{end} for gene {gene}")
-    info(f"    ⇰ Plot boundaries: chr{c}:{start}-{end}")
+    logger.info(f"    ⇰ Ensembl provided the coordinates chr{c}:{start}-{end} for gene {gene}")
+    logger.info(f"    ⇰ Plot boundaries: chr{c}:{start}-{end}")
 
     ## Getting variant consequences for all variants in the region
     logger.info("Querying Ensembl for SNP consequences and phenotype associations.")
