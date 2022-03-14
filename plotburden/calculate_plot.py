@@ -119,12 +119,18 @@ def read_meta_results_file(burden_file: str, ensg: str, pheno: str, condition_st
     return burden_df
 
 
+def read_variants_from_gene_set_SMMAT(variant_set_file: str, ensg: str, condition_string: str):
+    variantset = pd.read_csv(variant_set_file, sep = '\t', header = None, names = ['set', 'chr', 'ps', 'a1', 'a2', 'weight'])
+    variantset.drop(['chr'], axis=1, inplace=True)
+    return variantset[(variantset.set==f'{ensg}.{condition_string}')]
+
+
 @click.command()
 @click.option('-p', '--pheno', type = click.STRING, required=True, help = 'Phenotype name')
 @click.option('-g', '--gene',type = click.STRING, required=True, help = 'Gene name')
 @click.option('-c', '--condition', 'condition_string', type = click.STRING, required=True, help = 'Condition')
 @click.option('-w', '--window', type = click.INT, default = 100_000, show_default=True, help = 'Window size')
-@click.option('--variant-set', type = click.Path(exists=True), required=True, help = 'Variant set file')
+@click.option('--variant-set', 'variant_set_file', type = click.Path(exists=True), required=True, help = 'Variant set file')
 @click.option('--cohort-name', type = click.STRING, required=True, multiple=True, help = 'Single cohort name')
 @click.option('--cohort-rv', type = click.Path(exists=True, dir_okay=False), required=True, multiple=True, help = 'Single cohort rare variant file')
 @click.option('--cohort-sp', type = click.Path(exists=True, dir_okay=False), required=True, multiple=True, help = 'Single cohort single-point file')
@@ -136,7 +142,7 @@ def read_meta_results_file(burden_file: str, ensg: str, pheno: str, condition_st
 @click.option('--chop/--no-chop', default=False, show_default=True, help = 'Whether to chop or not')
 @click.option('--debug', is_flag=True, default=False, help = 'Run in debug mode')
 @click.version_option(__version__)
-def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_rv, cohort_sp, cohort_vcf, meta_rv, meta_sp, output, linkedFeatures, chop, debug, **kwargs):
+def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, cohort_rv, cohort_sp, cohort_vcf, meta_rv, meta_sp, output, linkedFeatures, chop, debug, **kwargs):
     '''
     Prepares data for plotting
     '''
@@ -243,12 +249,15 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
         cohort_data['meta'] = dict()
         cohort_data['meta']['burden_p']: float = meta_rv_df['O_pval'].iloc[0]
 
+    
+    ## read all variants in the gene sets including those not in some cohorts
+    logger.info("Reading variants from gene set...")
+    logger.debug(f"variants = read_variants_from_gene_set_SMMAT('{variant_set_file}', '{ensg}', '{condition_string}')")
+    variants = read_variants_from_gene_set_SMMAT(variant_set_file, ensg, condition_string)
+    logger.info(f"Read {variants.count()[0]} variants in burden across all cohorts")
+
     return
 
-    ## read all variants in the gene sets including those not in some cohorts
-    info("Reading variants from gene set...")
-    variants = helper_functions.read_variants_from_gene_set_SMMAT(ensid, condition_string, smmat_set_file)
-    info("Read ", variants.count()[0], "variants in burden across all cohorts")
     ## Now for the plot data
     ##
     cohdat={}
