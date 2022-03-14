@@ -15,8 +15,10 @@ import click
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from bokeh.palettes import PuOr8 as palette
+from bokeh.palettes import Viridis8 as palWeight
 
-from . import __version__, DEPENDENCIES, GET_LD_SH, gene_plotter, helper_functions
+from . import __version__, DEPENDENCIES, GET_LD_SH, GET_LD_META_SH, gene_plotter, helper_functions
 from .helper_functions import info
 from .logging import make_logger
 
@@ -123,6 +125,52 @@ def read_variants_from_gene_set_SMMAT(variant_set_file: str, ensg: str, conditio
     variantset = pd.read_csv(variant_set_file, sep = '\t', header = None, names = ['set', 'chr', 'ps', 'a1', 'a2', 'weight'])
     variantset.drop(['chr'], axis=1, inplace=True)
     return variantset[(variantset.set==f'{ensg}.{condition_string}')]
+
+
+def produce_single_cohort_df(gc, vcf: str, coname: str, megasp: pd.DataFrame, variants: pd.DataFrame, logger):
+    c=gc.chrom
+    start = gc.start
+    end = gc.end
+    ## Get the single point results
+    subset_megasp=megasp.loc[:, megasp.columns.str.endswith(coname) | megasp.columns.isin(['consequence', 'pheno', 'ensembl_rs', 'ensembl_consequence'])]
+    subset_megasp.columns = subset_megasp.columns.str.replace(f'_{coname}$', '', regex=True)
+    subset_megasp=subset_megasp[subset_megasp.chr.notnull()]
+    ## Get the weights and variants in burden
+
+    rawdat=pd.merge(subset_megasp, variants, on='ps', how='outer')
+    if rawdat[rawdat.chr.isnull()].ps.size > 0 :
+        logger.warning(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants from the gene set were not found in the single point.")
+    rawdat.dropna(subset=['chr'], inplace=True)
+
+    ## Calculate LD
+    logger.info("Calculating LD...")
+    logger.info(f"{GET_LD_SH} {vcf} chr{c}:{start}-{end} {subset_megasp.size} {end-start}")
+    task = subprocess.Popen([GET_LD_SH, vcf, "chr"+str(c)+":"+str(start)+"-"+str(end), str(subset_megasp.size), str(end-start)], stdout=subprocess.PIPE)
+    ld=pd.read_table(task.stdout, sep='\s+')
+
+    ## Defining plot-specific data
+    logger.info("Defining plot-specific data...")
+    rawdat['radii']=3
+    denom=rawdat.weight[rawdat.weight.notnull()]
+    if len(denom):
+        denom=max(denom)
+    else:
+        denom=1
+    rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/denom
+    rawdat['alpha']=0
+    rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
+    rawdat['alpha_prevsig']=0
+    rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
+    # Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
+    palWeight2=[x for x in palWeight]
+    palWeight2.append("#939393")
+    rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.af]
+    rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
+    rawdat['color']="#1F77B4"
+    rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+    rawdat['outcolor']="#3288bd"
+    rawdat["outalpha"]=0
+    return rawdat, ld
 
 
 @click.command()
@@ -256,21 +304,17 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     variants = read_variants_from_gene_set_SMMAT(variant_set_file, ensg, condition_string)
     logger.info(f"Read {variants.count()[0]} variants in burden across all cohorts")
 
-    return
 
     ## Now for the plot data
     ##
-    cohdat = dict()
-    lddat = dict()
-    i=0
-    import pickle
-    for n in co_names.split(","):
-        info("Preparing plot data for cohort "+n)
-        rawdat, ld=helper_functions.produce_single_cohort_df(gc, sp_results.split(',')[i], resp, vcf.split(",")[i], smmat_out_file.split(',')[i], smmat_set_file, pheno, condition_string, n, sp, variants)
-        cohdat[i]=rawdat
-        lddat[i]=ld
-    #    cohdat[i]=ColumnDataSource(data=dict(ps=rawdat.ps, logsp=-log10(rawdat.p_score), radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs, rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence))
-        i=i+1
+    for name, data in cohort_data.items():
+        if name=='meta': # TODO: Remove this later
+            continue
+        rawdat, ld = produce_single_cohort_df(gc=gc, vcf=data['vcf'], coname=name, megasp=sp3, variants=variants, logger = logger)
+        data['rawdat'] = rawdat
+        data['ld'] = ld
+
+    return
 
     cohdat[i], lddat[i] = helper_functions.produce_meta_df(gc, sp, variants, vcf, co_names)
     with open('sp.bin', 'wb') as config_dictionary_file:
