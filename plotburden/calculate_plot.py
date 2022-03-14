@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from . import DEPENDENCIES, __version__, gene_plotter, helper_functions
+from . import __version__, DEPENDENCIES, GET_LD_SH, gene_plotter, helper_functions
 from .helper_functions import info
 from .logging import make_logger
 
@@ -233,7 +233,7 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     for name, data in cohort_data.items():
         burden_file = data['rv']
         logger.info(f'Searching for {gene} in {burden_file}')
-        logger.debug(f"read_meta_results_file('{burden_file}', '{gene}', '{pheno}', '{condition_string}')")
+        logger.debug(f"read_sc_results_file('{burden_file}', '{gene}', '{pheno}', '{condition_string}')")
         burden_df = read_sc_results_file(burden_file, ensg, pheno, condition_string)
         selected_burden = burden_df.loc[(burden_df['pheno']==pheno)
                                         & (burden_df['condition']==condition_string)]
@@ -260,8 +260,8 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
 
     ## Now for the plot data
     ##
-    cohdat={}
-    lddat={}
+    cohdat = dict()
+    lddat = dict()
     i=0
     import pickle
     for n in co_names.split(","):
