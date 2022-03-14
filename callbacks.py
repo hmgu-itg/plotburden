@@ -402,7 +402,7 @@ if(cb_obj.active==0){
     bezier.change.emit();
 }else if (cb_obj.active==1){
     // used to be highlight, is now fountain. Destroy highlight.
-        var rdat = rawdat.data;
+    var rdat = rawdat.data;
     for (var i = 0; i < rdat['ps'].length; i++) {
         rdat['outalpha'][i] = 0
         rdat['outcol'][i] = "#3288bd"

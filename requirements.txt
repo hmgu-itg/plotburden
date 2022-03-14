@@ -1,8 +1,0 @@
-asr
-bokeh
-mpmath
-numpy
-pandas
-pybedtools
-requests
-seaborn
