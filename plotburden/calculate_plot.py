@@ -8,7 +8,7 @@ import random
 import pickle
 import logging
 import subprocess
-from io import StringIO
+from io import StringIO, BytesIO
 from datetime import datetime
 
 import click
@@ -95,6 +95,30 @@ def combine_all_sp(gc, cohort_data, meta_sp):
     return retdf
 
 
+def read_sc_results_file(burden_file: str, ensg: str, pheno: str, condition_string: str) -> pd.DataFrame:
+    task = run(f'zgrep -w "^{ensg}" {burden_file}')
+    burden_df = pd.read_csv(BytesIO(task.stdout),
+                          sep = '\t',
+                          header = None,
+                          names = ["gene","pheno","condition","symbol","n_variants",
+                                   "miss_min","miss_mean","miss_max","freq_min","freq_mean",
+                                   "freq_max","B_score","B_var","B_pval","S_pval","O_pval","O_minp",
+                                   "O_minp.rho","E_pval"])
+    return burden_df
+
+
+def read_meta_results_file(burden_file: str, ensg: str, pheno: str, condition_string: str) -> float:
+    task = run(f'zgrep -m1 "" {burden_file}')
+    cols = task.stdout.decode().strip().split('\t')
+
+    task = run(f'zgrep -w "^{ensg}" {burden_file}')
+    burden_df = pd.read_csv(BytesIO(task.stdout), sep = '\t', header=None, names = cols)
+    if "pheno" not in burden_df.columns:
+        burden_df.rename(columns={'protein': 'pheno'}, inplace=True)
+    burden_df.columns = burden_df.columns.str.replace('.', '_', regex=False)
+    return burden_df
+
+
 @click.command()
 @click.option('-p', '--pheno', type = click.STRING, required=True, help = 'Phenotype name')
 @click.option('-g', '--gene',type = click.STRING, required=True, help = 'Gene name')
@@ -124,7 +148,7 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
 
     logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
     now = datetime.strftime(datetime.utcnow(), '%Y-%m-%d %H:%M:%S UTC')
-    logger.info('Running calculate-plot on {now}')
+    logger.info(f'Running calculate-plot on {now}')
     logger.debug('setting up cohort_data')
     cohort_data = {
         name: {
@@ -154,7 +178,7 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     # c = gc.chrom
     # start = gc.start
     # end = gc.end
-    ensid=gc.gene_id
+    ensg=gc.gene_id
 
     # Report coordinates:
     logger.info(f"    ⇰ Ensembl provided the coordinates {region} for gene {gene}")
@@ -192,19 +216,34 @@ def cli(pheno, gene, condition_string, window, variant_set, cohort_name, cohort_
     sp2['ensembl_consequence'] = sp2['consequence']
     sp2['chr'] = sp2['chr'].astype(int)
 
-    return 
-    info("Getting consequences for novel variants...")
-    sp = helper_functions.get_csq_novel_variants(sp, 'chr', 'ps', 'allele0', 'allele1')
-
-
+    
+    logger.info("Getting consequences for novel variants...")
+    sp3 = helper_functions.get_csq_novel_variants(sp2, 'chr', 'ps', 'allele0', 'allele1')
 
     ## Get the burden p-values
     ## Returns a dictionary indexed by the cohort name or "meta"
-    info("Reading burden P-values...")
-    results = helper_functions.read_burden_ps(co_names, smmat_out_file, ensid, pheno, condition_string)
-    # import pickle
-    # with open('results.bin', 'rb') as config_dictionary_file:
-    #     results = pickle.load(config_dictionary_file)
+    logger.info("Reading burden P-values...")
+    
+    for name, data in cohort_data.items():
+        burden_file = data['rv']
+        logger.info(f'Searching for {gene} in {burden_file}')
+        logger.debug(f"read_meta_results_file('{burden_file}', '{gene}', '{pheno}', '{condition_string}')")
+        burden_df = read_sc_results_file(burden_file, ensg, pheno, condition_string)
+        selected_burden = burden_df.loc[(burden_df['pheno']==pheno)
+                                        & (burden_df['condition']==condition_string)]
+        logger.debug(selected_burden)
+        data['burden_p']: float = selected_burden['O_pval'].iloc[0]
+
+    if meta_rv is not None:
+        logger.info('Extracting burden p-value from meta-analysis file')
+        logger.debug(f"read_meta_results_file('{meta_rv}', '{ensg}', '{pheno}', '{condition_string}')")
+        meta_rv_df = read_meta_results_file(meta_rv, ensg, pheno, condition_string)
+        meta_rv_df = meta_rv_df[(meta_rv_df['pheno']==pheno) & (meta_rv_df['condition']==condition_string)]
+        logger.debug(meta_rv_df)
+        cohort_data['meta'] = dict()
+        cohort_data['meta']['burden_p']: float = meta_rv_df['O_pval'].iloc[0]
+
+    return
 
     ## read all variants in the gene sets including those not in some cohorts
     info("Reading variants from gene set...")
