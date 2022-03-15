@@ -310,7 +310,9 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     for name, data in cohort_data.items():
         if name=='meta': # TODO: Remove this later
             continue
-        rawdat, ld = produce_single_cohort_df(gc=gc, vcf=data['vcf'], coname=name, megasp=sp3, variants=variants, logger = logger)
+        vcf_file = data['vcf']
+        logger.info('Getting rawdat and LD info for {name}')
+        rawdat, ld = produce_single_cohort_df(gc=gc, vcf=vcf_file, coname=name, megasp=sp3, variants=variants, logger = logger)
         data['rawdat'] = rawdat
         data['ld'] = ld
 
