@@ -214,6 +214,13 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     }
     logger.debug(cohort_data)
 
+    logger.debug('setting up meta_data')
+    meta_data = {
+        'rv': meta_rv,
+        'sp': meta_sp
+    }
+    logger.debug(meta_data)
+
 
     gene_plotter.linkedFeatures=linkedFeatures
     helper_functions.contdir=os.path.dirname(__file__)
@@ -294,8 +301,7 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         meta_rv_df = read_meta_results_file(meta_rv, ensg, pheno, condition_string)
         meta_rv_df = meta_rv_df[(meta_rv_df['pheno']==pheno) & (meta_rv_df['condition']==condition_string)]
         logger.debug(meta_rv_df)
-        cohort_data['meta'] = dict()
-        cohort_data['meta']['burden_p']: float = meta_rv_df['O_pval'].iloc[0]
+        meta_data['burden_p']: float = meta_rv_df['O_pval'].iloc[0]
 
     
     ## read all variants in the gene sets including those not in some cohorts

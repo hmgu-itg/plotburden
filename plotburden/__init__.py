@@ -6,7 +6,8 @@ __version__ = '0.0.1'
 
 DEPENDENCIES = {
     'tabix',
-    'plink'
+    'plink',
+    'bcftools'
 }
 
 _BASE_DIR = Path(__file__).parent
