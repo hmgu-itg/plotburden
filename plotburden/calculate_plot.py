@@ -19,7 +19,6 @@ from bokeh.palettes import PuOr8 as palette
 from bokeh.palettes import Viridis8 as palWeight
 
 from . import __version__, DEPENDENCIES, GET_LD_SH, GET_LD_META_SH, gene_plotter, helper_functions
-from .helper_functions import info
 from .logging import make_logger
 
 
@@ -173,6 +172,50 @@ def produce_single_cohort_df(gc, vcf: str, coname: str, megasp: pd.DataFrame, va
     return rawdat, ld
 
 
+def produce_meta_df(gc, co_names: str, vcf_files: str, sp: pd.DataFrame, variants: pd.DataFrame, logger) -> tuple[pd.DataFrame, pd.DataFrame]:
+    c = gc.chrom
+    start = gc.start
+    end = gc.end
+
+    rawdat=pd.merge(sp, variants, on='ps', how='outer')
+    if rawdat[rawdat.chr.isnull()].ps.size > 0 :
+        logger.warning(str(rawdat[rawdat.chr.isnull()].ps.size)+" variants from the gene set were not found in the single point.")
+    rawdat.dropna(subset=['chr'], inplace=True)
+
+    logger.info("Calculating LD...")
+    region = f"chr{c}:{start}-{end}"
+    cmd = f"{GET_LD_META_SH} {co_names} {vcf_files} {region} {sp.size} {end-start}"
+    logger.debug(cmd)
+    task = run(cmd)
+    logger.debug(task.stderr)
+    ld=pd.read_csv(BytesIO(task.stdout), sep='\s+')
+    logger.info(f"Computed LD between {len(ld.index)} variant pairs.")
+
+    ## Defining plot-specific data
+    logger.info("Defining plot-specific data...")
+    rawdat['radii']=3
+    denom=rawdat.weight[rawdat.weight.notnull()]
+    if len(denom):
+        denom=max(denom)
+    else:
+        denom=1
+    rawdat.loc[rawdat.weight.notnull(), 'radii']=3+20*rawdat.weight[rawdat.weight.notnull()]/denom
+    rawdat['alpha']=0
+    rawdat.loc[rawdat.weight.notnull(), 'alpha']=0.8
+    rawdat['alpha_prevsig']=0
+    rawdat.loc[(rawdat.pheno!="none") & (rawdat.alpha>0), 'alpha_prevsig']=1
+    # Spectral9 Palette : ['#3288bd', '#66c2a5', '#abdda4', '#e6f598', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d53e4f']
+    palWeight2=[x for x in palWeight]
+    palWeight2.append("#939393")
+    rawdat['maf']=[af if af<0.5 else 1-af for af in rawdat.Freq1_meta]
+    rawdat['mafcolor']=[palette[i] for i in pd.cut(rawdat.maf, [-1, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.6]).cat.codes]
+    rawdat['color']="#1F77B4"
+    rawdat['weightcolor']=[palWeight2[i] for i in pd.cut(rawdat.weight, 7).cat.codes]
+    rawdat['outcolor']="#3288bd"
+    rawdat["outalpha"]=0
+    return rawdat, ld
+
+
 @click.command()
 @click.option('-p', '--pheno', type = click.STRING, required=True, help = 'Phenotype name')
 @click.option('-g', '--gene',type = click.STRING, required=True, help = 'Gene name')
@@ -317,60 +360,23 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         if name=='meta': # TODO: Remove this later
             continue
         vcf_file = data['vcf']
-        logger.info('Getting rawdat and LD info for {name}')
+        logger.info(f'Getting rawdat and LD info for {name}')
         rawdat, ld = produce_single_cohort_df(gc=gc, vcf=vcf_file, coname=name, megasp=sp3, variants=variants, logger = logger)
         data['rawdat'] = rawdat
         data['ld'] = ld
 
+    logger.info('Getting rawdat and LD info for meta')
+    co_names = ','.join(cohort_data.keys())
+    vcf_files = ','.join([v['vcf'] for v in cohort_data.values()])
+    meta_data['rawdat'], meta_data['ld'] = produce_meta_df(gc=gc, co_names=co_names,
+                                                           vcf_files=vcf_files, sp=sp3,
+                                                           variants=variants, logger=logger)
+
+    # TODO: Double check if this pickled data is actually used
+    # with open(f'{output}.sp.bin', 'wb') as config_dictionary_file:
+    #     pickle.dump(sp, config_dictionary_file)
+
     return
-
-    cohdat[i], lddat[i] = helper_functions.produce_meta_df(gc, sp, variants, vcf, co_names)
-    with open('sp.bin', 'wb') as config_dictionary_file:
-        pickle.dump(sp, config_dictionary_file)
-
-
-    # with open('resp.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(resp, config_dictionary_file)
-    #
-    # with open('ld.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(lddat, config_dictionary_file)
-    #
-    # with open('results.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(results, config_dictionary_file)
-    # with open('gc.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(gc, config_dictionary_file)
-    #
-    # # =================================================================================================
-    # # =================================================================================================
-    # # =================================================================================================
-    #
-    # import pickle
-    #
-    # with open('cohdat.bin', 'rb') as config_dictionary_file:
-    #     cohdat = pickle.load(config_dictionary_file)
-    #
-    # with open('gc.bin', 'rb') as config_dictionary_file:
-    #     gc = pickle.load(config_dictionary_file)
-    # c=gc.chrom
-    # start = gc.start
-    # end = gc.end
-    # gene_start=gc.gstart
-    # gene_end=gc.gend
-    # ensid=gc.gene_id
-    #
-    #
-    # with open('ld.bin', 'rb') as config_dictionary_file:
-    #     lddat = pickle.load(config_dictionary_file)
-    #
-    # with open('results.bin', 'rb') as config_dictionary_file:
-    #     results = pickle.load(config_dictionary_file)
-    #
-    # with open('resp.bin', 'rb') as config_dictionary_file:
-    #     resp = pickle.load(config_dictionary_file)
-
-    ## Preparing plot variables
-    ## maxlogp is the min of all ps, that is used to set plot ylim
-    ## cohdat is overwritten to become an array of dataframes containing the SP info for the respective cohorts
 
     i=0
     rawdats=[]
