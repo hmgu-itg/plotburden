@@ -24,29 +24,19 @@ This requires a server so cannot be hosted on github.
 ![Example image - Meta-analysis](example_meta_obfs.png)
 
 ## Prerequisites
-In order to run this software you need to have working copies of the following tools installed:
+- Python>=3.6
+
+In order to run this software you need to have working copies of the following tools installed and in your `$PATH`:
 * Plink 1.9 or newer ([available here](https://www.cog-genomics.org/plink2/index))
 * Tabix ([available as part of bcftools/htslib](http://www.htslib.org/download/))
-
-### Python libraries
-* `pandas`
-* `numpy`
-* `bokeh`
-* `pybedtools`
-* `requests`
-* `urllib` (`urllib.request` and `urllib.parse`)
-
+* Bcftools ([available as part of bcftools/htslib](http://www.htslib.org/download/))
 
 ## Installation
-Hopefully, this tool should work quasi out-of-the-box. It **needs `tabix` and `plink` to be in your path**, since it calls these directly from inside the script. This is done like:
-
+Install the package
 ```bash
-export PATH=/path/to/tabix:/path/to/plink:$PATH
-```
-
-If you want to make these changes permanent, do:
-```bash
-echo 'export PATH=/path/to/tabix:/path/to/plink:$PATH' >> ~/.bashrc
+git clone https://github.com/hmgu-itg/plotburden.git
+cd plotburden
+python3 -m pip install .
 ```
 
 ## Input
@@ -74,28 +64,46 @@ So far, the program works only with the output of [GEMMA](http://www.xzlab.org/s
 You will first need to generate a binary file that contains plot data, then pass that file to a visualisation script. This is easily automated in a script with your own data paths. In the following documentation, the script takes information from _i_ cohorts, plus the meta-analysis.
 
 #### Calculating plot data
+If you have installed `plotburden` correctly, the `calculate-plot` command should be available.
+Run `calculate-plot --help` to see the help message.
 
 ```bash
-calculate_plot.py [phenotype_name] [gene_name] [condition] [variant_set_file] \
-                  single_cohort_RV_results_file_0[,single_cohort_RV_results_file_1[,...]]],meta_analysis_RV_results_file cohort_name_0[,cohort_name_1[,...]] \
-                  single_cohort_SP_results_file_0[,single_cohort_SP_results_file_1[,...]]],meta_analysis_SP_results_file \
-                  single_cohort_VCF_0[,single_cohort_VCF_1[,...]] \
-                  [window] [output] [linked_features] [chopping]
+calculate-plot \
+   --pheno [phenotype_name] \
+   --gene [gene_name] \
+   --condition [condition] \
+   --variant-set [variant_set_file] \
+   --linked [linked_features] \
+   --cohort-name [single_cohort_name_0] \
+   --cohort-rv [single_cohort_0_RV_results_file] \
+   --cohort-sp [single_cohort_0_SP_results_file] \
+   --cohort-vcf [single_cohort_0_VCF] \
+   --cohort-name [single_cohort_name_1] \
+   --cohort-rv [single_cohort_1_RV_results_file] \
+   --cohort-sp [single_cohort_1_SP_results_file] \
+   --cohort-vcf [single_cohort_1_VCF] \
+   --meta-rv [meta_analysis_RV_results_file] \
+   --meta-sp [meta_analysis_SP_results_file] \
+   --out [output] \
+   --window [window, default=100000] \
+   --chop/--no-chop \
+   --debug
 ```
 
 * **phenotype_name** the phenotype name used in the rare variant output files (e.g. _LDL_).
 * **gene_name** is the name of the gene (e.g. _CETP_). This will be converted to ENSG ids via an API call to Ensembl, so has to be recognizable and mappable by it.
 * **condition** variant selection method used when performing burden tests (The script expects to find variant sets named _ENSGXXX.condition_ in the set file, where _ENSGXXX_ maps to `gene_symbol` in Ensembl, see section "Input" below).
 * **variant_set_file** variant set file used for burden testing. It can contain all genes (study wide) or just the gene/condition you are interested in. It should be of the form `set_name\tchr\tpos\tallele1\tallele2\tweight` (no header).
-* **single_cohort_RV_results_file_i** : results of burden associations in each cohort, separately. It should be tab delimited, optionally gzipped, with the following columns : `"gene","pheno","condition","symbol","O_pval"`.
+* **single_cohort_i_RV_results_file** : results of burden associations in each cohort, separately. It should be tab delimited, optionally gzipped, with the following columns : `"gene","pheno","condition","symbol","O_pval"`.
+* **single_cohort_i_SP_results_file** : As above, for single-point association. Expected to be **bgzipped and tabixed**, GEMMA and GCTA outputs are supported.
+* **single_cohort_i_VCF** : Single-cohort VCF containing SNP information for all SNPs included in **variant_set_file** and **single_cohort_i_SP_results_file**, SNPs are not required to be named identically, since matching is done per position. Can be single-chromosome, region-based or whole-genome. Used for LD calculation.
 * **meta_analysis_RV_results_file** : results of burden association meta-analysis. It should be tab delimited, optionally gzipped, with the following columns : `"gene","pheno","group","symbol","O_pval"`. `group` here is equivalent to `condition` above.
-* **single_cohort_SP_results_file_i** : As above, for single-point association. Expected to be **bgzipped and tabixed**, GEMMA and GCTA outputs are supported.
 * **meta_analysis_SP_results_file** : As above, for single-point association. METAL output is supported.
-* **single_cohort_VCF_i** : Single-cohort VCF containing SNP information for all SNPs included in **variant_set_file** and **single_cohort_SP_results_file_i**, SNPs are not required to be named identically, since matching is done per position. Can be single-chromosome, region-based or whole-genome. Used for LD calculation.
 * **window** : Window, in base pairs, to extend gene boundaries by. If this is too large, the program will be very, very slow. We have experienced good results with 30kb.
-* **output** : output file in html format.
+* **output** : output file prefix.
 * **linked_features** : linked features file generated by our [containerised rare variant association pipeline](https://github.com/hmgu-itg/burden_testing).
-* **chopping**: please set this to `False`
+* **--chop/--no-chop**: Default is `--no-chop`
+* **--debug**: Whether to run in debug mode.
 
 #### Visualising the plot
 
