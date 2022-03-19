@@ -331,17 +331,18 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
             # GCTA input: convert
             sp_df.columns = ("chr", "rs", "ps", "allele1", "allele0", "af", "beta", "se", "p_score")
         sp_df['logp'] = -np.log10(sp_df['p_score'].to_numpy())
-        sp_df = sp_df.add_suffix('_'+name)
+        # sp_df = sp_df.add_suffix('_'+name)
         data['sp_df'] = sp_df
         
     if meta is True:
         meta_sp_df = fetch_region_single_point(gc, meta_sp)
         meta_sp_df['logp'] = -np.log10(meta_sp_df['P-value'].to_numpy())
-        meta_data['sp_df'] = meta_sp_df.add_suffix('_meta')
+        meta_data['sp_df'] = meta_sp_df
+        # meta_data['sp_df'] = meta_sp_df.add_suffix('_meta')
 
     sp = None
     for name, data in cohort_data.items():
-        sp_df = data['sp_df']
+        sp_df = data['sp_df'].add_suffix('_'+name)
         if sp is None:
             sp = sp_df
             sp['chr'] = sp['chr_'+name]
@@ -357,7 +358,7 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     sp['ps'] = sp['ps'].astype(int)
 
     if meta is True:
-        sp = pd.merge(sp, meta_data['sp_df'], left_on="ps", right_on="Pos_meta", how="outer")
+        sp = pd.merge(sp, meta_data['sp_df'].add_suffix('_meta'), left_on="ps", right_on="Pos_meta", how="outer")
         sp['ps'].fillna(sp["Pos_meta"], inplace=True)
         sp['chr'].fillna(sp["Chrom_meta"], inplace=True)
         sp['chr'] = sp['chr'].astype(int)
@@ -412,8 +413,6 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     ## Now for the plot data
     ##
     for name, data in cohort_data.items():
-        if name=='meta': # TODO: Remove this later
-            continue
         vcf_file = data['vcf']
         logger.info(f'Getting rawdat and LD info for {name}')
         rawdat, ld = produce_single_cohort_df(gc=gc, vcf=vcf_file, coname=name, megasp=sp3, variants=variants, logger = logger)
