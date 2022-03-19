@@ -37,12 +37,12 @@ def fetch_region_single_point(gc, sp_file) -> pd.DataFrame:
     region = f'{gc.chrom}:{gc.start}-{gc.end}'
     task = run(f'tabix {sp_file} {region}')
 
-    content = task.stdout.decode('utf-8')
+    return pd.read_csv(BytesIO(task.stdout), sep = '\t', header = None, names = cols)
+    # content = task.stdout.decode('utf-8')
+    # return pd.read_csv(StringIO(content), sep = '\t', header = None, names = cols)
 
-    return pd.read_csv(StringIO(content), sep = '\t', header = None, names = cols)
 
-
-def combine_sp(gc, cohort_data):
+def combine_sp(gc, cohort_data, logger):
     for name, data in cohort_data.items():
         sp_df = fetch_region_single_point(gc, data['sp'])
         if sp_df.columns[0] == 'Chr':
@@ -51,6 +51,9 @@ def combine_sp(gc, cohort_data):
         sp_df['logp'] = -np.log10(sp_df['p_score'].to_numpy())
         sp_df = sp_df.add_suffix('_'+name)
         data['sp_df'] = sp_df
+        logger.debug(f'{name} sp_df with suffix added')
+        logger.debug(sp_df)
+
 
     retdf = None
     for name, data in cohort_data.items():
@@ -72,7 +75,7 @@ def combine_sp(gc, cohort_data):
     return retdf
 
 
-def combine_all_sp(gc, cohort_data, meta_sp):
+def combine_all_sp(gc, cohort_data, meta_sp, logger):
     '''
     Parameters
     ----------
@@ -83,10 +86,11 @@ def combine_all_sp(gc, cohort_data, meta_sp):
     meta_sp : str
         File path to METAL output file
     '''
-    retdf = combine_sp(gc, cohort_data)
+    retdf = combine_sp(gc, cohort_data, logger)
 
     meta_sp_df = fetch_region_single_point(gc, meta_sp)
     meta_sp_df = meta_sp_df.add_suffix('_meta')
+    logger.debug(f'meta sp_df with suffix added')
 
     retdf = pd.merge(retdf, meta_sp_df, left_on="ps", right_on="Pos_meta", how="outer")
     retdf['ps'].fillna(retdf["Pos_meta"], inplace=True)
@@ -243,6 +247,22 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     if missing:
         sys.exit(f"Following dependencies are missing: {', '.join(missing)}")
 
+    if (meta_rv is not None and meta_sp is None) \
+        or (meta_rv is None and meta_sp is not None):
+        sys.exit(f"Either both or neither --meta-rv and --meta-sp needs to be specified")
+    
+    if meta_rv is None and meta_sp is None:
+        meta = False
+    else:
+        logger.debug('setting up meta_data')
+        meta_data = {
+            'rv': meta_rv,
+            'sp': meta_sp
+        }
+        logger.debug(meta_data)
+        meta = True
+
+
     logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
     now = datetime.strftime(datetime.utcnow(), '%Y-%m-%d %H:%M:%S UTC')
     logger.info(f'Running calculate-plot on {now}')
@@ -256,13 +276,6 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         for name, rv, sp, vcf in zip(cohort_name, cohort_rv, cohort_sp, cohort_vcf)
     }
     logger.debug(cohort_data)
-
-    logger.debug('setting up meta_data')
-    meta_data = {
-        'rv': meta_rv,
-        'sp': meta_sp
-    }
-    logger.debug(meta_data)
 
 
     gene_plotter.linkedFeatures=linkedFeatures
@@ -309,7 +322,49 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
 
     ## Get the single point results. Returns one merged (outer) dataframe with all columns suffixed by the cohort name
     ## We are just going to use this for annotation purposes
-    sp = combine_all_sp(gc, cohort_data, meta_sp)
+
+
+    # Read all single-point data
+    for name, data in cohort_data.items():
+        sp_df = fetch_region_single_point(gc, data['sp'])
+        if sp_df.columns[0] == 'Chr':
+            # GCTA input: convert
+            sp_df.columns = ("chr", "rs", "ps", "allele1", "allele0", "af", "beta", "se", "p_score")
+        sp_df['logp'] = -np.log10(sp_df['p_score'].to_numpy())
+        sp_df = sp_df.add_suffix('_'+name)
+        data['sp_df'] = sp_df
+        
+    if meta is True:
+        meta_sp_df = fetch_region_single_point(gc, meta_sp)
+        meta_sp_df['logp'] = -np.log10(meta_sp_df['P-value'].to_numpy())
+        meta_data['sp_df'] = meta_sp_df.add_suffix('_meta')
+
+    sp = None
+    for name, data in cohort_data.items():
+        sp_df = data['sp_df']
+        if sp is None:
+            sp = sp_df
+            sp['chr'] = sp['chr_'+name]
+            sp['ps'] = sp['ps_'+name]
+            sp['allele0'] = sp['allele0_'+name]
+            sp['allele1'] = sp['allele1_'+name]
+        else:
+            sp=pd.merge(sp, sp_df, left_on="ps", right_on="ps_"+name, how="outer")
+            ## ALSO THIS WOULD WORK df.loc[df['foo'].isnull(),'foo'] = df['bar']
+            sp['ps'].fillna(sp["ps_"+name], inplace=True)
+            sp['chr'].fillna(sp["chr_"+name], inplace=True)
+    sp['chr'] = sp['chr'].astype(int)
+    sp['ps'] = sp['ps'].astype(int)
+
+    if meta is True:
+        sp = pd.merge(sp, meta_data['sp_df'], left_on="ps", right_on="Pos_meta", how="outer")
+        sp['ps'].fillna(sp["Pos_meta"], inplace=True)
+        sp['chr'].fillna(sp["Chrom_meta"], inplace=True)
+        sp['chr'] = sp['chr'].astype(int)
+        sp['ps'] = sp['ps'].astype(int)
+
+
+    # sp = combine_all_sp(gc, cohort_data, meta_sp, logger)
     logger.info(f'Read {sp.shape[0]} lines from all single-point association files')
     logger.debug(sp)
     
@@ -338,7 +393,7 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         logger.debug(selected_burden)
         data['burden_p']: float = selected_burden['O_pval'].iloc[0]
 
-    if meta_rv is not None:
+    if meta is True:
         logger.info('Extracting burden p-value from meta-analysis file')
         logger.debug(f"read_meta_results_file('{meta_rv}', '{ensg}', '{pheno}', '{condition_string}')")
         meta_rv_df = read_meta_results_file(meta_rv, ensg, pheno, condition_string)
