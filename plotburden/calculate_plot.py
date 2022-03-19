@@ -336,6 +336,8 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         
     if meta is True:
         meta_sp_df = fetch_region_single_point(gc, meta_sp)
+        meta_sp_df = meta_sp_df[~meta_sp_df['P-value'].isin(['nanenan'])]
+        meta_sp_df['P-value'] = meta_sp_df['P-value'].astype(float)
         meta_sp_df['logp'] = -np.log10(meta_sp_df['P-value'].to_numpy())
         meta_data['sp_df'] = meta_sp_df
         # meta_data['sp_df'] = meta_sp_df.add_suffix('_meta')
