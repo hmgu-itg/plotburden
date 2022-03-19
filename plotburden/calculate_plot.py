@@ -432,31 +432,55 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     # with open(f'{output}.sp.bin', 'wb') as config_dictionary_file:
     #     pickle.dump(sp, config_dictionary_file)
 
+    
+    
+    rawdats = [data['rawdat'] for data in cohort_data.values()]
+    maxlogp_list = [rawdat['logp'].max() for rawdat in rawdats]
+
+    cohdat = dict()
+    for i, data in enumerate(cohort_data.values()):
+        rawdat = data['rawdat']
+        cohdat[i] = dict(ps=rawdat.ps,
+                        p_value=rawdat.p_score,
+                        logsp=rawdat.logp,
+                        radii=rawdat.radii,
+                        alpha=rawdat.alpha,
+                        color=rawdat.color,
+                        mafcolor=rawdat.mafcolor,
+                        weightcolor=rawdat.weightcolor,
+                        outcol=rawdat.outcolor,
+                        outalpha=rawdat.outalpha,
+                        alpha_prevsig=rawdat.alpha_prevsig,
+                        snpid=rawdat.rs,
+                        rs=rawdat.ensembl_rs,
+                        maf=rawdat.maf,
+                        csq=rawdat.ensembl_consequence)
+
+    if meta is True:
+        rawdat = meta_data['rawdat'].copy()
+        rawdat.rename(columns = {'P-value_meta': 'p_score'}, inplace=True)
+        rawdat['snpid'] = rawdat['chr'].astype(str)+":"+rawdat['ps'].astype(str)
+        maxlogp_list.append(max(rawdat['logp_meta']))
+        cohdat[i+1] = dict(ps=rawdat.ps,
+                        p_score=rawdat.p_score,
+                        logsp=rawdat.logp_meta,
+                        radii=rawdat.radii,
+                        alpha=rawdat.alpha,
+                        color=rawdat.color,
+                        mafcolor=rawdat.mafcolor,
+                        weightcolor=rawdat.weightcolor,
+                        outcol=rawdat.outcolor,
+                        outalpha=rawdat.outalpha,
+                        alpha_prevsig=rawdat.alpha_prevsig,
+                        snpid=rawdat.chr.astype(str)+":"+rawdat.ps.astype(str),
+                        rs=rawdat.ensembl_rs,
+                        maf=rawdat.maf,
+                        csq=rawdat.ensembl_consequence)
+
+        
+    maxlogp = max(maxlogp_list)
+    
     return
-
-    i=0
-    rawdats=[]
-    maxlogp=0
-    # Single-points
-    for n in co_names.split(","):
-        rawdats.append(cohdat[i])
-        rawdat=cohdat[i]
-    #    if -log10(rawdat.p_score.min())>maxlogp:
-        if rawdat.logp.max()>maxlogp:
-            print(n)
-            print(rawdat.columns)
-            maxlogp=rawdat.logp.max()
-        cohdat[i]=dict(ps=rawdat.ps, p_value=rawdat.p_score, logsp=rawdat.logp, radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.rs, rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
-        i=i+1
-
-    ## meta-analysis (beware, ALL columns are as is)
-    rawdats.append(cohdat[i])
-    rawdat=cohdat[i]
-    print(rawdat.columns)
-    if rawdat.logpmeta.max()>maxlogp:
-        maxlogp=rawdat.logpmeta.max()
-    rawdat.rename(columns = {'P-valuemeta': 'p_score'}, inplace = True) # WARNING! This code is only valid for METAL output meta-analysis file!
-    cohdat[i]=dict(ps=rawdat.ps, p_score=rawdat.p_score, logsp=rawdat.logpmeta, radii=rawdat.radii, alpha=rawdat.alpha, color=rawdat.color, mafcolor=rawdat.mafcolor, weightcolor=rawdat.weightcolor, outcol=rawdat.outcolor, outalpha=rawdat.outalpha, alpha_prevsig=rawdat.alpha_prevsig, snpid=rawdat.chr.astype(str)+":"+rawdat.ps.astype(str), rs=rawdat.ensembl_rs, maf=rawdat.maf, csq=rawdat.ensembl_consequence)
 
 
     ## Creating the df containing ALL points coloured by cohort
