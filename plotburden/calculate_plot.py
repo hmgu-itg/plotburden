@@ -426,9 +426,10 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     logger.info('Getting rawdat and LD info for meta')
     co_names = ','.join(cohort_data.keys())
     vcf_files = ','.join([v['vcf'] for v in cohort_data.values()])
-    meta_data['rawdat'], meta_data['ld'] = produce_meta_df(gc=gc, co_names=co_names,
-                                                           vcf_files=vcf_files, sp=sp3,
-                                                           variants=variants, logger=logger)
+    if meta is True:
+        meta_data['rawdat'], meta_data['ld'] = produce_meta_df(gc=gc, co_names=co_names,
+                                                               vcf_files=vcf_files, sp=sp3,
+                                                               variants=variants, logger=logger)
 
     # TODO: Double check if this pickled data is actually used
     # with open(f'{output}.sp.bin', 'wb') as config_dictionary_file:
@@ -589,7 +590,8 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
                 chop=chop,
                 pheno=pheno,
                 condition_string=condition_string,
-                linkedFeatures=linkedFeatures)
+                linkedFeatures=linkedFeatures,
+                meta=meta)
 
     with open(f'{output}.plotdat.json', 'w') as f:
         json.dump(plotdat, f)

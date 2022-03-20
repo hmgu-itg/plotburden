@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import pickle
 
 import numpy as np
 import pandas as pd
@@ -65,6 +64,7 @@ chop=plotdat['chop']
 pheno=plotdat['pheno']
 condition_string=plotdat['condition_string']
 linkedFeatures=plotdat['linkedFeatures']
+meta=plotdat['meta']
 
 cohort_color=bigdf[["cocolor", "cohort"]]
 cohort_color.drop_duplicates(inplace=True)
@@ -230,9 +230,9 @@ def callback_showsp(arg):
 		print("Enabled single point")
 		currawdat.loc[currawdat.weight.isnull(), 'alpha']=1
 	#source.data=cohdat[i]
-	if control_source.active==(len(co_split)-1):
+	if meta is True and control_source.active==(len(co_split)-1):
 		## we are in m/a
-		source.data=dict(ps=currawdat.ps, p_value=currawdat.p_score, logsp=currawdat.logpmeta, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
+		source.data=dict(ps=currawdat.ps, p_value=currawdat.p_score, logsp=currawdat.logp_meta, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.chr.astype(str)+":"+currawdat.ps.astype(str), rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	else:
 		source.data=dict(ps=currawdat.ps, p_value=currawdat.p_score, logsp=currawdat.logp, radii=currawdat.radii, alpha=currawdat.alpha, color=currawdat.color, mafcolor=currawdat.mafcolor, weightcolor=currawdat.weightcolor, outcol=currawdat.outcolor, outalpha=currawdat.outalpha, alpha_prevsig=currawdat.alpha_prevsig, snpid=currawdat.rs, rs=currawdat.ensembl_rs, maf=currawdat.maf, csq=currawdat.ensembl_consequence)
 	callback_chcolor(chcolor.active)
@@ -293,23 +293,23 @@ p3 = figure(width=430, title="Forest Plot (enable show meta-analysis and select 
 def generate_forestplot_df(selected):
 	print("selected points:")
 	print(selected)
-	directions=list(selected.Directionmeta)
+	directions=list(selected.Direction_meta)
 	ptdf=[]
 	k=0
 	p3.title.text="Forest plot for "+str(int(selected.chr))+":"+str(int(selected.ps))
 	for n in co_split:
 		if(n=="meta"):
-			x=selected["Effect"+n].squeeze()
+			x=selected["Effect_"+n].squeeze()
 			y=k
-			start=x-selected['StdErr'+n].squeeze()
-			end=x+selected['StdErr'+n].squeeze()
+			start=x-selected['StdErr_'+n].squeeze()
+			end=x+selected['StdErr_'+n].squeeze()
 		else:
-			x=abs(selected["beta"+n].squeeze())
+			x=abs(selected["beta_"+n].squeeze())
 			if(directions[k]=="-"):
 				x=-1*x
 			y=k
-			start=x-selected['se'+n].squeeze()
-			end=x+selected['se'+n].squeeze()
+			start=x-selected['se_'+n].squeeze()
+			end=x+selected['se_'+n].squeeze()
 		color=cohort_color[n]
 		ptdf.append([x,y,start,end, color])
 		k=k+1
@@ -398,20 +398,20 @@ TableColumn(field="weight", title="weight")
 k = 0
 for n in co_split:
 	if(n=="meta"):
-		col_signals_table.append(TableColumn(field="P-valuemeta", title="P (meta)"))
-		col_signals_table.append(TableColumn(field="Effectmeta", title="effect (meta)"))
-		col_signals_table.append(TableColumn(field="StdErrmeta", title="S.E. (meta)"))
-		col_signals_table.append(TableColumn(field="Allele1meta", title="A1 (meta)"))
-		col_signals_table.append(TableColumn(field="Allele2meta", title="A2 (meta)"))
-		col_signals_table.append(TableColumn(field="Freq1meta", title="A2 (meta)"))
-		col_signals_table.append(TableColumn(field="HetPValmeta", title="het. P"))
+		col_signals_table.append(TableColumn(field="P-value_meta", title="P (meta)"))
+		col_signals_table.append(TableColumn(field="Effect_meta", title="effect (meta)"))
+		col_signals_table.append(TableColumn(field="StdErr_meta", title="S.E. (meta)"))
+		col_signals_table.append(TableColumn(field="Allele1_meta", title="A1 (meta)"))
+		col_signals_table.append(TableColumn(field="Allele2_meta", title="A2 (meta)"))
+		col_signals_table.append(TableColumn(field="Freq1_meta", title="A2 (meta)"))
+		col_signals_table.append(TableColumn(field="HetPVal_meta", title="het. P"))
 	else:
-		col_signals_table.append(TableColumn(field="p_score"+n, title="P ("+n+")"))
-		col_signals_table.append(TableColumn(field="beta"+n, title="effect ("+n+")"))
-		col_signals_table.append(TableColumn(field="se"+n, title="S.E. ("+n+")"))
-		col_signals_table.append(TableColumn(field="allele1"+n, title="A1 ("+n+")"))
-		col_signals_table.append(TableColumn(field="allele0"+n, title="A2 ("+n+")"))
-		col_signals_table.append(TableColumn(field="af"+n, title="AF ("+n+")"))
+		col_signals_table.append(TableColumn(field="p_score_"+n, title="P ("+n+")"))
+		col_signals_table.append(TableColumn(field="beta_"+n, title="effect ("+n+")"))
+		col_signals_table.append(TableColumn(field="se_"+n, title="S.E. ("+n+")"))
+		col_signals_table.append(TableColumn(field="allele1_"+n, title="A1 ("+n+")"))
+		col_signals_table.append(TableColumn(field="allele0_"+n, title="A2 ("+n+")"))
+		col_signals_table.append(TableColumn(field="af_"+n, title="AF ("+n+")"))
 	k = k + 1
 
 signals_table=DataTable(source=metasegsource, columns=col_signals_table, width=1900)
