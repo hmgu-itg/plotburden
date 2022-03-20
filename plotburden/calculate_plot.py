@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import json
 import shlex
 import shutil
 import random
-import pickle
+# import pickle
 import logging
 import subprocess
-from io import StringIO, BytesIO
+from io import BytesIO
 from datetime import datetime
 
 import click
@@ -250,6 +251,8 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     if (meta_rv is not None and meta_sp is None) \
         or (meta_rv is None and meta_sp is not None):
         sys.exit(f"Either both or neither --meta-rv and --meta-sp needs to be specified")
+
+    logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
     
     if meta_rv is None and meta_sp is None:
         meta = False
@@ -263,7 +266,6 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         meta = True
 
 
-    logger = make_logger(f'{output}.log', logging.DEBUG if debug else logging.INFO)
     now = datetime.strftime(datetime.utcnow(), '%Y-%m-%d %H:%M:%S UTC')
     logger.info(f'Running calculate-plot on {now}')
     logger.debug('setting up cohort_data')
@@ -477,19 +479,16 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
                         maf=rawdat.maf,
                         csq=rawdat.ensembl_consequence)
 
-        
     maxlogp = max(maxlogp_list)
-    
-    return
-
 
     ## Creating the df containing ALL points coloured by cohort
     co_split=co_names.split(",")
-    co_split.append("meta")
+    if meta is True:
+        co_split.append("meta")
 
-    palette=sns.color_palette("Set2").as_hex()
+    palette = sns.color_palette("Set2").as_hex()
     random.shuffle(palette)
-    #palette.insert(0, '#3288bd')
+
     cter=0
     bigdf=None
     for data in cohdat:
@@ -505,42 +504,96 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         if(bigdf is None):
             bigdf=df
         else:
-            bigdf=bigdf.append(df, ignore_index=True)
+            # bigdf=bigdf.append(df, ignore_index=True)
+            bigdf = pd.concat([bigdf, df], ignore_index=True)
         cter=cter+1
 
 
-    ## append the p ranges to sp for the m/a segments
-    # for co in co_split:
-    #     if co=="meta":
-    #         col='P-valuemeta'
-    #     else:
-    #         col='p_score'+co
-    #     sp['logp'+co]=-log10(sp[col])
+    sp3['minp']=sp3[["logp_"+s for s in co_split]].min(axis=1)
+    sp3['maxp']=sp3[["logp_"+s for s in co_split]].max(axis=1)
+    sp3['segcol']="gray"
+    sp4=pd.merge(sp3, variants, on="ps", how='outer')
+    sp4.dropna(subset=['chr'], inplace=True)
 
 
-    sp['minp']=sp[["logp"+s for s in co_split]].min(axis=1)
-    sp['maxp']=sp[["logp"+s for s in co_split]].max(axis=1)
-    sp['segcol']="gray"
-    sp=pd.merge(sp, variants, on="ps", how='outer')
-    sp.dropna(subset=['chr'], inplace=True)
-    #sp.loc[sp.weight.isnull(), 'segcol']="#FFFFFF00"
-
-
-    # with open('cohdat.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(cohdat, config_dictionary_file)
-    # with open('rawdat.bin', 'wb') as config_dictionary_file:
-    #     pickle.dump(rawdats, config_dictionary_file)
-
-    ## we modified the whole code to have logp calculated within a helper Function
     ## burden logp very unklikely to be that low so we leave logp calculation as is
+    results = {name: data['burden_p'] for name, data in cohort_data.items()}
+    if meta is True:
+        results['meta'] = meta_data['burden_p']
+        
     rawdat=rawdats[0]
     if -np.log10(min(results.values()))>maxlogp:
         maxlogp=-np.log10(min(results.values()))
 
+    lddat = {i: data['ld'] for i, data in enumerate(cohort_data.values())}
 
-    plotdat=dict(rawdats=rawdats, rawdat=rawdat, maxlogp=maxlogp, gene=gene, gc=gc, resp=resp, lddat=lddat, sp=sp, cohdat=cohdat, co_split=co_split, results=results, bigdf=bigdf, window=window, chop=chop, pheno=pheno, condition_string=condition_string, linkedFeatures=linkedFeatures)
-    with open(output+'.plotdat.bin', 'wb') as config_dictionary_file:
-        pickle.dump(plotdat, config_dictionary_file)
+    if meta is True:
+        lddat[i+1] = meta_data['ld']
+
+
+    # plotdat=dict(rawdats=rawdats,
+    #          rawdat=rawdat,
+    #          maxlogp=maxlogp,
+    #          gene=gene,
+    #          gc=gc,
+    #          resp=resp,
+    #          lddat=lddat,
+    #          sp=sp,
+    #          cohdat=cohdat,
+    #          co_split=co_split,
+    #          results=results,
+    #          bigdf=bigdf,
+    #          window=window,
+    #          chop=chop,
+    #          pheno=pheno,
+    #          condition_string=condition_string,
+    #          linkedFeatures=linkedFeatures)
+
+    # with open(f'{output}.plotdat.bin', 'wb') as config_dictionary_file:
+    #     pickle.dump(plotdat, config_dictionary_file)
+
+    rawdats2 = [json.loads(df.to_json()) for df in rawdats]
+    rawdat2 = json.loads(rawdat.to_json())
+    resp2 = json.loads(resp.to_json())
+    gc2 = {
+        'chrom': gc.chrom,
+        'start': gc.start,
+        'end': gc.end,
+        'gene_id': gc.gene_id,
+        'name': gc.name
+    }
+    lddat2 = {k: json.loads(v.to_json()) for k, v in lddat.items()}
+    sp5 = json.loads(sp4.to_json())
+
+    cohdat2 = cohdat.copy()
+    for v in cohdat2.values():
+        for k2, v2 in v.items():
+            v[k2] = json.loads(v2.to_json())
+
+    bigdf2 = json.loads(bigdf.to_json())
+
+
+    plotdat=dict(rawdats=rawdats2,
+                rawdat=rawdat2,
+                maxlogp=maxlogp,
+                gene=gene,
+                gc=gc2,
+                resp=resp2,
+                lddat=lddat2,
+                sp=sp5,
+                cohdat=cohdat2,
+                co_split=co_split,
+                results=results,
+                bigdf=bigdf2,
+                window=window,
+                chop=chop,
+                pheno=pheno,
+                condition_string=condition_string,
+                linkedFeatures=linkedFeatures)
+
+    with open(f'{output}.plotdat.json', 'w') as f:
+        json.dump(plotdat, f)
+
 
 
 if __name__ == "__main__":

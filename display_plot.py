@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import pickle
 
 import numpy as np
@@ -11,9 +12,8 @@ from bokeh.models.widgets import RadioButtonGroup, Div
 from bokeh.layouts import layout, row, column
 from bokeh.plotting import figure, curdoc
 
-import helper_functions
+from plotburden import helper_functions, gene_plotter
 import callbacks as cb
-import gene_plotter
 
 
 helper_functions.contdir=os.path.dirname(__file__)
@@ -26,20 +26,40 @@ plotdatfile=sys.argv[1]
 
 #plotdat=dict(rawdats=rawdats, rawdat=rawdat, maxlogp=maxlogp, gene=gene, gc=gc, resp=resp, lddat=lddat, sp=sp, cohdat=cohdat, co_split=co_split, results=results)
 
-with open(plotdatfile, 'rb') as config_dictionary_file:
-	plotdat = pickle.load(config_dictionary_file)
-rawdats=plotdat['rawdats']
-rawdat=plotdat['rawdat']
+# with open(plotdatfile, 'rb') as config_dictionary_file:
+# 	plotdat = pickle.load(config_dictionary_file)
+
+with open(plotdatfile, 'r') as config_dictionary_file:
+	plotdat = json.load(config_dictionary_file)
+
+
+# rawdats=plotdat['rawdats']
+rawdats = [pd.DataFrame(v) for v in plotdat['rawdats']]
+# rawdat=plotdat['rawdat']
+rawdat = pd.DataFrame(plotdat['rawdat'])
+
 maxlogp=plotdat['maxlogp']
 gene=plotdat['gene']
-gc=plotdat['gc']
-resp=plotdat['resp']
-lddat=plotdat['lddat']
-sp=plotdat['sp']
-cohdat=plotdat['cohdat']
+# gc=plotdat['gc']
+gc: dict = plotdat['gc']
+gc = helper_functions.GeneCoordinates(gc['chrom'], gc['start'], gc['end'], gc['gene_id'], gc['name'])
+
+# resp=plotdat['resp']
+resp = pd.DataFrame(plotdat['resp'])
+# lddat=plotdat['lddat']
+lddat = {int(k): pd.DataFrame(v) for k, v in plotdat['lddat'].items()}
+
+# sp=plotdat['sp']
+sp = pd.DataFrame(plotdat['sp'])
+
+# cohdat=plotdat['cohdat']
+cohdat = {int(k): pd.DataFrame(v) for k, v in plotdat['cohdat'].items()}
+
 co_split=plotdat['co_split']
 results=plotdat['results']
-bigdf=plotdat['bigdf']
+# bigdf=plotdat['bigdf']
+bigdf = pd.DataFrame(plotdat['bigdf'])
+
 window=plotdat['window']
 chop=plotdat['chop']
 pheno=plotdat['pheno']
@@ -50,6 +70,8 @@ cohort_color=bigdf[["cocolor", "cohort"]]
 cohort_color.drop_duplicates(inplace=True)
 cohort_color=cohort_color.set_index('cohort').to_dict()
 cohort_color=cohort_color['cocolor']
+
+
 
 c=gc.chrom
 start = gc.start
@@ -62,7 +84,18 @@ ensid=gc.gene_id
 helper_functions.info("Loading Bokeh...")
 
 ### Initialising the burden p-value and corresponding segment
+
+# from pathlib import Path
+# g = Path('gene.bin')
+# if g.exists():
+# 	with open(g, 'rb') as f:
+# 		gc2 = pickle.load(f)
+# else:
+# 	gc2 = helper_functions.get_coordinates(gene)
+# 	with open(g, 'wb') as f:
+# 		pickle.dump(gc2, f)
 gc2 = helper_functions.get_coordinates(gene)
+
 burden_p = results[co_split[0]]
 logburdenp = -1 * np.log10(burden_p)
 if (max(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps'])-min(rawdats[0].loc[rawdats[0].weight.notnull(), 'ps']) < 500):
