@@ -107,7 +107,7 @@ calculate-plot \
 
 #### Visualising the plot
 
-The above step will generate a `[output].plotdat.json` document containing plot data. **This has to be run on a machine where you either can run a browser, or one that you can access via a network**. This file is read by the second script:
+The `calculate-plot` command above will generate a `[output].plotdat.json` file containing plot data. **This has to be run on a machine where you either can run a browser, or one that you can access via a network**. This file is read by the below command:
 
 ```bash
 bokeh serve --port [port_number] display_plot.py --args [json.file]
