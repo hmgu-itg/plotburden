@@ -107,14 +107,14 @@ calculate-plot \
 
 #### Visualising the plot
 
-The above step will generate a `.bin` document containing plot data. **This has to be run on a machine where you either can run a browser, or one that you can access via a network**. This file is read by the second script:
+The above step will generate a `[output].plotdat.json` document containing plot data. **This has to be run on a machine where you either can run a browser, or one that you can access via a network**. This file is read by the second script:
 
 ```bash
-bokeh serve --port [port_number] display_plot.py --args [binfile]
+bokeh serve --port [port_number] display_plot.py --args [json.file]
 ```
 
 * **port_number** local port to serve the plot on. If you don't know what to put there, use any number above 10000.
-* **binfile** The file generated in the step above.
+* **json.file** The file generated from running `calculate-plot`.
 
 Then go to the address `http://hostname:port_number/display_plot`. `hostname` is `localhost` if you are opening a browser on the same machine the server is running on, or the name of the machine otherwise. If this does not work, the port may be blocked or the network configuration may prevent you from serving webpages. In that case, contact your sysadmin or run this on your own machine.
 
