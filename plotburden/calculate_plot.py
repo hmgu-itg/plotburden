@@ -393,8 +393,11 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
         logger.info(f'Searching for {gene} in {burden_file}')
         logger.debug(f"read_sc_results_file('{burden_file}', '{gene}', '{pheno}', '{condition_string}')")
         burden_df = read_sc_results_file(burden_file, ensg, pheno, condition_string)
+        logger.debug('burden_df')
+        logger.debug(burden_df)
         selected_burden = burden_df.loc[(burden_df['pheno']==pheno)
                                         & (burden_df['condition']==condition_string)]
+        logger.debug('selected_burden')
         logger.debug(selected_burden)
         data['burden_p']: float = selected_burden['O_pval'].iloc[0]
 
