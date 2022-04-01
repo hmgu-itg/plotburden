@@ -390,8 +390,8 @@ def cli(pheno, gene, condition_string, window, variant_set_file, cohort_name, co
     
     for name, data in cohort_data.items():
         burden_file = data['rv']
-        logger.info(f'Searching for {gene} in {burden_file}')
-        logger.debug(f"read_sc_results_file('{burden_file}', '{gene}', '{pheno}', '{condition_string}')")
+        logger.info(f'Searching for {ensg} ({gene}) in {burden_file}')
+        logger.debug(f"read_sc_results_file('{burden_file}', '{ensg}', '{pheno}', '{condition_string}')")
         burden_df = read_sc_results_file(burden_file, ensg, pheno, condition_string)
         logger.debug('burden_df')
         logger.debug(burden_df)
